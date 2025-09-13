@@ -1,63 +1,126 @@
 # Cong Phone Backend
 
-A serverless Node.js Express backend for an Apple product webshop, built with AWS Lambda and MongoDB.
+A comprehensive serverless Node.js Express backend for an Apple product webshop, built with AWS Lambda, MongoDB, and AWS Cognito authentication.
 
-## Features
+## 🚀 Features
 
+### Core Features
+- **Authentication & Authorization**: Complete AWS Cognito integration with customer and admin roles
+- **User Management**: Customer registration, admin user creation, profile management
 - **Brands**: Manage product brands (Apple, Samsung, etc.)
 - **Categories**: Organize products into categories (Smartphones, Tablets, Laptops, Accessories)
 - **Products**: Handle products with variants (color, storage, connectivity options)
-- **Multi-language Support**: English and Vietnamese message responses
 - **File Upload**: Direct S3 upload with presigned URLs
-- **Serverless Architecture**: Deploy to AWS Lambda
 
-## Tech Stack
+### Advanced Features
+- **Multi-language Support**: English and Vietnamese message responses
+- **JWT Token Management**: Access and refresh token handling
+- **Role-based Access Control**: Customer and admin permission separation
+- **Serverless Architecture**: Deploy to AWS Lambda
+- **Comprehensive Error Handling**: Centralized error management with translation
+- **Input Validation**: Joi-based request validation
+- **Database Seeding**: Automated data population scripts
+
+## 🛠️ Tech Stack
 
 - **Runtime**: Node.js 20.x
 - **Framework**: Express.js with serverless-http
 - **Database**: MongoDB with Mongoose ODM
+- **Authentication**: AWS Cognito with JWT tokens
 - **Deployment**: AWS Lambda via Serverless Framework
-- **File Storage**: AWS S3
+- **File Storage**: AWS S3 with presigned URLs
 - **Language**: TypeScript
+- **Validation**: Joi schemas
+- **Logging**: Winston logger
 
-## Project Structure
+## 📁 Project Structure
 
 ```
 src/
 ├── config/           # Database configuration
 ├── constants/        # Application constants and messages
 ├── controllers/      # Request handlers
+│   ├── auth.controller.ts      # Authentication controller
 │   └── common/       # Public API controllers
+│       ├── brand.controller.ts
+│       ├── category.controller.ts
+│       └── product.controller.ts
 ├── middleware/       # Express middleware
+│   ├── auth.ts      # Authentication middleware
+│   ├── error.ts     # Error handling middleware
+│   └── validate.ts  # Input validation middleware
 ├── models/          # Mongoose models
+│   ├── user.model.ts
+│   ├── brand.model.ts
+│   ├── category.model.ts
+│   └── product.model.ts
 ├── routes/          # API routes
+│   ├── auth.routes.ts        # Authentication routes
+│   ├── file.routes.ts        # File upload routes
 │   └── common/      # Public routes
+│       ├── brand.routes.ts
+│       ├── category.routes.ts
+│       └── product.routes.ts
 ├── scripts/         # Database seeding scripts
+│   ├── seedAdmin.ts # Create admin user
+│   └── seedData.ts  # Seed sample data
 ├── services/        # Business logic services
+│   ├── auth.service.ts       # Authentication service
+│   ├── cognito.service.ts    # AWS Cognito service
+│   ├── s3.service.ts         # AWS S3 service
+│   ├── brand.service.ts
+│   ├── category.service.ts
+│   └── product.service.ts
 ├── utils/           # Utility functions
+│   ├── ApiResponse.ts        # API response utilities
+│   ├── jwt.ts               # JWT token utilities
+│   ├── messages.ts          # Message translation
+│   └── logger.ts            # Logging utilities
 └── validators/      # Input validation
+    ├── auth.validator.ts
+    ├── brand.validator.ts
+    ├── category.validator.ts
+    └── product.validator.ts
 ```
 
-## API Endpoints
+## 🔌 API Endpoints
 
 ### Health Check
 - `GET /health` - Service health status
 
-### Brands
+### 🔐 Authentication (`/auth`)
+
+#### Public Routes (No Authentication Required)
+- `POST /auth/login` - User login
+- `POST /auth/refresh-token` - Refresh access token
+- `POST /auth/forgot-password` - Initiate password reset
+- `POST /auth/confirm-forgot-password` - Confirm password reset
+
+#### Protected Routes (Authentication Required)
+- `GET /auth/profile` - Get user profile
+- `PUT /auth/profile` - Update user profile
+
+#### Admin Only Routes
+- `POST /auth/register` - Create new user (admin only)
+- `GET /auth/users` - Get all users with pagination
+- `GET /auth/users/:id` - Get user by ID
+- `DELETE /auth/users/:email` - Deactivate user
+
+### 🏷️ Brands (`/api/brands`)
 - `GET /api/brands` - Get all brands
 - `GET /api/brands/active` - Get active brands
 - `GET /api/brands/:id` - Get brand by ID
 - `GET /api/brands/slug/:slug` - Get brand by slug
 - `GET /api/brands/:id/products` - Get products by brand
 
-### Categories
+### 📂 Categories (`/api/categories`)
 - `GET /api/categories` - Get all categories
 - `GET /api/categories/active` - Get active categories
 - `GET /api/categories/:id` - Get category by ID
 - `GET /api/categories/slug/:slug` - Get category by slug
 - `GET /api/categories/:id/products` - Get products by category
 
-### Products
+### 📱 Products (`/api/products`)
 - `GET /api/products` - Get all products with filtering
 - `GET /api/products/featured` - Get featured products
 - `GET /api/products/new` - Get new products
@@ -65,7 +128,7 @@ src/
 - `GET /api/products/:id` - Get product by ID
 - `GET /api/products/slug/:slug` - Get product by slug
 
-### File Upload
+### 📁 File Upload (`/files`)
 - `POST /files/upload-url` - Get presigned URL for upload
 - `POST /files/upload-urls` - Get multiple presigned URLs
 - `DELETE /files/delete` - Delete file from S3
@@ -123,13 +186,30 @@ npm run dev
 npm run seed
 ```
 
+5. Create initial admin user:
+```bash
+npm run seed:admin
+```
+
+This creates an admin user with:
+- Email: `admin@congphone.com`
+- Password: `Admin123!`
+
 ### Environment Variables
 
 ```env
+# Database
 MONGODB_URI=mongodb://localhost:27017/cong-phone
-JWT_SECRET=your-jwt-secret
-S3_BUCKET=your-s3-bucket
+
+# AWS Configuration
 AWS_REGION=ap-southeast-1
+S3_BUCKET=your-s3-bucket
+
+# AWS Cognito
+COGNITO_USER_POOL_ID=your_user_pool_id
+COGNITO_CLIENT_ID=your_client_id
+
+# Application
 NODE_ENV=development
 ```
 
@@ -149,7 +229,73 @@ npm run dev
 
 The API will be available at `http://localhost:3001`
 
-## Database Models
+## 🔐 Authentication System
+
+### User Types
+
+#### Customer
+- Can register, login, reset password
+- Can update their own profile
+- Access to public APIs and their own data
+
+#### Admin
+- Can login, reset password
+- Can create new admin users
+- Can manage all users (view, deactivate)
+- Full access to all APIs
+
+### Authentication Flow
+
+1. **Login**: User provides email/password, receives JWT tokens
+2. **Token Usage**: Include `Authorization: Bearer <token>` in requests
+3. **Token Refresh**: Use refresh token to get new access token
+4. **Password Reset**: Initiate reset, receive code via email, confirm with new password
+
+### Middleware Usage
+
+```typescript
+// Optional authentication - user may or may not be logged in
+router.get('/public', optionalAuth, controller.publicMethod);
+
+// Required authentication - user must be logged in
+router.get('/protected', requiredAuth, controller.protectedMethod);
+
+// Admin only - user must be admin
+router.get('/admin', adminOnly, controller.adminMethod);
+
+// Customer only - user must be customer
+router.get('/customer', customerOnly, controller.customerMethod);
+```
+
+### Helper Functions
+
+```typescript
+import { getCurrentUser, isAuthenticated, isAdmin, isCustomer } from '../middleware/auth';
+
+// In your controller
+const user = getCurrentUser(req);
+if (isAuthenticated(req)) {
+  console.log('User is logged in');
+}
+if (isAdmin(req)) {
+  console.log('User is admin');
+}
+```
+
+## 📊 Database Models
+
+### User
+- `cognitoId`: AWS Cognito user ID
+- `email`: User email address
+- `firstName`: First name
+- `lastName`: Last name
+- `phone`: Phone number
+- `type`: User type (customer/admin)
+- `status`: User status (active/inactive/suspended)
+- `profileImage`: Profile image URL
+- `lastLoginAt`: Last login timestamp
+- `createdAt`: Creation timestamp
+- `updatedAt`: Last update timestamp
 
 ### Brand
 - `name`: Brand name
