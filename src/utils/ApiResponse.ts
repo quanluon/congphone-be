@@ -68,7 +68,7 @@ export class ApiError extends Error {
     public statusCode: number,
     message: string,
     public data: any = null,
-    public messageKey?: string // Add message key for translation
+    public msgCode?: string // Add message key for translation
   ) {
     super(message);
     this.name = 'ApiError';

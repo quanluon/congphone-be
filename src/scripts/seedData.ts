@@ -1,4 +1,9 @@
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+
+// Load environment variables first
+dotenv.config();
+
 import connectToDatabase from '../config/database';
 import { Brand } from '../models/brand.model';
 import { Category } from '../models/category.model';
@@ -45,6 +50,10 @@ async function seedData() {
       {
         name: 'Laptops',
         description: 'Portable personal computers'
+      },
+      {
+        name: 'Watches',
+        description: 'Smartwatches and wearable devices'
       },
       {
         name: 'Accessories',

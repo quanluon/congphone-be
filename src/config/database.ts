@@ -1,9 +1,7 @@
 import mongoose from "mongoose";
-import dotenv from "dotenv";
 import logger from "../utils/logger";
 import { EnvVariables } from "./env";
 
-dotenv.config();
 
 let cachedDb: typeof mongoose | null = null;
 

@@ -2,13 +2,13 @@ import { NextFunction, Request, Response } from "express";
 import { verifyCognitoToken } from "../utils/jwt";
 import { authService } from "../services/auth.service";
 import { ApiError } from "../utils/ApiResponse";
-import { UserType } from "../models/user.model";
+import { IUser, UserType } from "../models/user.model";
 
 // Extend Express Request interface
 declare global {
   namespace Express {
     interface Request {
-      user?: any;
+      user?: IUser;
       token?: string;
     }
   }
@@ -19,10 +19,14 @@ declare global {
  * If token is provided, verifies it and adds user to request
  * If no token or invalid token, continues without user
  */
-export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
+export const optionalAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
     const token = req.headers.authorization?.split(" ")[1];
-    
+
     if (!token) {
       return next();
     }
@@ -30,10 +34,10 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
     try {
       // Verify JWT token
       const payload = await verifyCognitoToken(token);
-      
+
       // Get user from database
       const user = await authService.getUserByCognitoId(payload.sub);
-      
+
       if (user) {
         req.user = user;
         req.token = token;
@@ -53,36 +57,31 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
  * Required authentication middleware
  * Requires valid token and user, throws error if not authenticated
  */
-export const requiredAuth = async (req: Request, res: Response, next: NextFunction) => {
+export const requiredAuth = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   try {
-    const token = req.headers.authorization?.split(" ")[1];
-    
-    if (!token) {
-      throw new ApiError(401, 'Authorization token required', null, 'tokenRequired');
-    }
-
     try {
-      // Verify JWT token
-      const payload = await verifyCognitoToken(token);
-      
-      // Get user from database
-      const user = await authService.getUserByCognitoId(payload.sub);
-      
-      if (!user) {
-        throw new ApiError(401, 'User not found', null, 'userNotFound');
+      if (!req.user) {
+        throw new ApiError(401, "User not found", null, "userNotFound");
       }
 
-      req.user = user;
-      req.token = token;
       next();
     } catch (error: any) {
-      if (error.message === 'Token expired') {
-        throw new ApiError(401, 'Token expired', null, 'tokenExpired');
+      if (error.message === "Token expired") {
+        throw new ApiError(401, "Token expired", null, "tokenExpired");
       }
-      if (error.message === 'Invalid token') {
-        throw new ApiError(401, 'Invalid token', null, 'invalidToken');
+      if (error.message === "Invalid token") {
+        throw new ApiError(401, "Invalid token", null, "invalidToken");
       }
-      throw new ApiError(401, 'Authentication failed', null, 'authenticationFailed');
+      throw new ApiError(
+        401,
+        error.message || "Authentication failed",
+        null,
+        error.msgCode || "authenticationFailed"
+      );
     }
   } catch (error) {
     next(error);
@@ -93,37 +92,49 @@ export const requiredAuth = async (req: Request, res: Response, next: NextFuncti
  * Admin only middleware
  * Requires authentication and admin role
  */
-export const adminOnly = [
-  requiredAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (req.user?.type !== UserType.ADMIN) {
-        throw new ApiError(403, 'Admin access required', null, 'adminAccessRequired');
-      }
-      next();
-    } catch (error) {
-      next(error);
+export const adminOnly = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (req.user?.type !== UserType.ADMIN) {
+      throw new ApiError(
+        403,
+        "Admin access required",
+        null,
+        "adminAccessRequired"
+      );
     }
-  },
-];
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * Customer only middleware
  * Requires authentication and customer role
  */
-export const customerOnly = [
-  requiredAuth,
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      if (req.user?.type !== UserType.CUSTOMER) {
-        throw new ApiError(403, 'Customer access required', null, 'customerAccessRequired');
-      }
-      next();
-    } catch (error) {
-      next(error);
+export const customerOnly = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    if (req.user?.type !== UserType.CUSTOMER) {
+      throw new ApiError(
+        403,
+        "Customer access required",
+        null,
+        "customerAccessRequired"
+      );
     }
-  },
-];
+    next();
+  } catch (error) {
+    next(error);
+  }
+};
 
 /**
  * Get current user from request

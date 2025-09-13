@@ -19,7 +19,8 @@
     "test": "jest",
     "clean": "rm -rf .build .serverless node_modules/.cache dist",
     "seed": "ts-node src/scripts/seedData.ts",
-    "seed:admin": "ts-node src/scripts/seedAdmin.ts"
+    "seed:admin": "ts-node src/scripts/seedAdmin.ts",
+    "seed:products": "ts-node src/scripts/seedProducts.ts"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.400.0",

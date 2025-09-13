@@ -13,6 +13,7 @@ import { requestLogger } from './utils/logger';
 import logger from './utils/logger';
 import connectToDatabase from './config/database';
 import { EnvVariables } from './config/env';
+import { optionalAuth } from './middleware/auth';
 
 dotenv.config();
 
@@ -29,12 +30,8 @@ app.use(cors({
 app.use(express.json());
 app.use(requestLogger);
 
-// Database connection
-let cachedDb: typeof mongoose | null = null;
-
-
 // Routes
-app.use('/', routes);
+app.use('/',optionalAuth, routes);
 
 // Error handling middleware
 app.use(errorHandler);

@@ -2,6 +2,7 @@ import { Router } from "express";
 import commonRoutes from "./common";
 import fileRoutes from "./file.routes";
 import authRoutes from "./auth.routes";
+import { optionalAuth } from "@/middleware/auth";
 
 const router = Router();
 
