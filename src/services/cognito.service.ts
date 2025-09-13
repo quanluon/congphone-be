@@ -12,6 +12,7 @@ import {
   AttributeType,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ApiError } from '../utils/ApiResponse';
+import { EnvVariables } from '@/config/env';
 
 export interface CognitoTokens {
   accessToken: string;
@@ -51,10 +52,10 @@ export class CognitoService {
 
   constructor() {
     this.client = new CognitoIdentityProviderClient({
-      region: process.env.AWS_REGION || 'ap-southeast-1',
+      region: EnvVariables.AWS_REGION,
     });
-    this.userPoolId = process.env.COGNITO_USER_POOL_ID || '';
-    this.clientId = process.env.COGNITO_CLIENT_ID || '';
+    this.userPoolId = EnvVariables.COGNITO_USER_POOL_ID;
+    this.clientId = EnvVariables.COGNITO_CLIENT_ID;
   }
 
   /**

@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ApiResponse, ApiError } from "../utils/ApiResponse";
 import { getMessage } from "../utils/messages";
 import logger from "../utils/logger";
+import { EnvVariables } from "@/config/env";
 
 export const errorHandler = (
   err: Error,
@@ -63,7 +64,7 @@ export const errorHandler = (
     .json(
       ApiResponse.error(
         err?.message || getMessage('internalError', language),
-        process.env.NODE_ENV === "development" ? err : undefined
+        EnvVariables.NODE_ENV === "development" ? err : undefined
       ).build()
     );
 };

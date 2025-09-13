@@ -12,6 +12,7 @@ import { errorHandler } from './middleware/error';
 import { requestLogger } from './utils/logger';
 import logger from './utils/logger';
 import connectToDatabase from './config/database';
+import { EnvVariables } from './config/env';
 
 dotenv.config();
 
@@ -53,7 +54,7 @@ export const handler = async (event: any, context: any) => {
         body: JSON.stringify({ 
           success: false,
           message: 'Internal Server Error',
-          data: process.env.NODE_ENV === 'development' ? err.message : undefined
+          data: EnvVariables.NODE_ENV === 'development' ? err.message : undefined
         })
       };
     });

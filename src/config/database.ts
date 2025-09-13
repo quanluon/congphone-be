@@ -1,6 +1,7 @@
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-import logger from '../utils/logger';
+import mongoose from "mongoose";
+import dotenv from "dotenv";
+import logger from "../utils/logger";
+import { EnvVariables } from "./env";
 
 dotenv.config();
 
@@ -12,14 +13,14 @@ export async function connectToDatabase() {
   }
 
   return mongoose
-    .connect(process.env.MONGODB_URI!)
-    .then(db => {
+    .connect(EnvVariables.MONGODB_URI!, { dbName: EnvVariables.MONGODB_NAME! })
+    .then((db) => {
       cachedDb = db;
-      logger.info('Connected to MongoDB');
+      logger.info(`Connected to MongoDB: ${EnvVariables.MONGODB_NAME}`);
       return cachedDb;
     })
-    .catch(err => {
-      logger.error('MongoDB connection error:', err);
+    .catch((err) => {
+      logger.error("MongoDB connection error:", err);
       throw err;
     });
 }

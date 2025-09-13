@@ -1,8 +1,9 @@
 import { jwtVerify, createRemoteJWKSet, JWTPayload } from "jose";
+import { EnvVariables } from "@/config/env";
 
 // Create JWKS for Cognito
-const issuer = `https://cognito-idp.${process.env.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${process.env.COGNITO_USER_POOL_ID}`;
-const jwksUri = `${issuer}/.well-known/jwks.json`;
+const issuer = `https://cognito-idp.${EnvVariables.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${EnvVariables.COGNITO_USER_POOL_ID}`;
+const jwksUri = `${issuer}/.well-known/jwks.json`; 
 
 const JWKS = createRemoteJWKSet(new URL(jwksUri));
 
@@ -29,7 +30,7 @@ export async function verifyCognitoToken(token: string): Promise<CognitoJWTPaylo
   try {
     const { payload } = await jwtVerify(token, JWKS, {
       issuer,
-      // audience: process.env.COGNITO_CLIENT_ID,
+      // audience: EnvVariables.COGNITO_CLIENT_ID,
     });
 
     return payload as CognitoJWTPayload;

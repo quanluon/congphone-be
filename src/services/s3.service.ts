@@ -7,6 +7,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 import path from "path";
+import { EnvVariables } from "@/config/env";
 
 export class S3Service {
   private s3Client: S3Client;
@@ -14,9 +15,9 @@ export class S3Service {
 
   constructor() {
     this.s3Client = new S3Client({
-      region: process.env.AWS_REGION || "ap-southeast-1",
+      region: EnvVariables.AWS_REGION,
     });
-    this.bucket = process.env.S3_BUCKET as string;
+    this.bucket = EnvVariables.S3_BUCKET;
   }
 
   private generateUniqueFileName(originalName: string): string {
@@ -67,7 +68,7 @@ export class S3Service {
   }
 
   getPublicUrl(key: string): string {
-    return `https://${this.bucket}.s3.${process.env.AWS_REGION}.amazonaws.com/${key}`;
+    return `https://${this.bucket}.s3.${EnvVariables.AWS_REGION}.amazonaws.com/${key}`;
   }
 
   async storePermanent(sourceKey: string, destinationKey: string, folder: string) {
