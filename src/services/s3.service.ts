@@ -7,7 +7,7 @@ import {
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 import path from "path";
-import { EnvVariables } from "@/config/env";
+import { EnvVariables } from "../config/env";
 
 export class S3Service {
   private s3Client: S3Client;

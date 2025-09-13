@@ -1,4 +1,4 @@
-import { DEFAULT_LIMIT, DEFAULT_PAGE } from "@/constants/common";
+import { DEFAULT_LIMIT, DEFAULT_PAGE } from "../constants/common";
 import { Model, Document } from "mongoose";
 
 export const getPagination = (

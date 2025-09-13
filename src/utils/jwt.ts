@@ -1,5 +1,5 @@
 import { jwtVerify, createRemoteJWKSet, JWTPayload } from "jose";
-import { EnvVariables } from "@/config/env";
+import { EnvVariables } from "../config/env";
 
 // Create JWKS for Cognito
 const issuer = `https://cognito-idp.${EnvVariables.AWS_REGION || 'ap-southeast-1'}.amazonaws.com/${EnvVariables.COGNITO_USER_POOL_ID}`;

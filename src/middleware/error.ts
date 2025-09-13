@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ApiResponse, ApiError } from "../utils/ApiResponse";
 import { getMessage } from "../utils/messages";
 import logger from "../utils/logger";
-import { EnvVariables } from "@/config/env";
+import { EnvVariables } from "../config/env";
 
 export const errorHandler = (
   err: Error,
@@ -23,7 +23,7 @@ export const errorHandler = (
 
   if (err instanceof ApiError) {
     const language = (req.headers['accept-language'] as string)?.includes('vi') ? 'vi' : 'en';
-    const message = err.messageKey ? getMessage(err.messageKey as any, language) : err.message;
+    const message = err.msgCode ? getMessage(err.msgCode as any, language) : err.message;
     return res
       .status(err.statusCode)
       .json(ApiResponse.error(message, err.data).build());

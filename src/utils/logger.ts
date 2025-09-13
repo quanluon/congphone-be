@@ -1,4 +1,4 @@
-import { EnvVariables } from '@/config/env';
+import { EnvVariables } from '../config/env';
 import winston from 'winston';
 
 const logger = winston.createLogger({

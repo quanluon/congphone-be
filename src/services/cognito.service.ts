@@ -12,7 +12,7 @@ import {
   AttributeType,
 } from '@aws-sdk/client-cognito-identity-provider';
 import { ApiError } from '../utils/ApiResponse';
-import { EnvVariables } from '@/config/env';
+import { EnvVariables } from '../config/env';
 
 export interface CognitoTokens {
   accessToken: string;

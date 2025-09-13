@@ -9,7 +9,7 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "outDir": ".build",
+    "outDir": "dist",
     "rootDir": "./",
     "baseUrl": ".",
     "paths": {
