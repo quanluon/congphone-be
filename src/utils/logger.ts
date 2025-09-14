@@ -1,5 +1,6 @@
 import { EnvVariables } from '../config/env';
 import winston from 'winston';
+import express from 'express';
 
 const logger = winston.createLogger({
   level: EnvVariables.LOG_LEVEL || 'info',
@@ -18,14 +19,14 @@ const logger = winston.createLogger({
 });
 
 // Add request logging middleware
-export const requestLogger = (req: any, res: any, next: any) => {
+export const requestLogger = (req: express.Request, res: express.Response, next: express.NextFunction) => {
   const start = Date.now();
 
   res.on('finish', () => {
     const duration = Date.now() - start;
     logger.info(JSON.stringify({
       method: req.method,
-      url: req.url,
+      url: req.baseUrl,
       status: res.statusCode,
       duration: `${duration}ms`,
       userAgent: req.get('user-agent'),

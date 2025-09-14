@@ -1,5 +1,5 @@
 import { DEFAULT_LIMIT, DEFAULT_PAGE } from "../constants/common";
-import { Model, Document } from "mongoose";
+import mongoose from "mongoose";
 
 export const getPagination = (
   {
@@ -41,7 +41,7 @@ export const getPaginationResponse = <T>(
 };
 
 export const paginate = async <T>(
-  model: any,
+  model: mongoose.Model<T>,
   options: {
     page: number;
     limit: number;
@@ -53,17 +53,21 @@ export const paginate = async <T>(
   const { page, limit, filter = {}, sort = {}, populate = [] } = options;
   const skip = (page - 1) * limit;
 
-  const query = model.find(filter).sort(sort).skip(skip).limit(limit);
-  
+  const query = model
+    .find(filter, null, { lean: true, strictQuery: true })
+    .sort(sort)
+    .skip(skip)
+    .limit(limit);
+
   if (populate.length > 0) {
     populate.forEach((pop) => {
       query.populate(pop);
-    });
+    }); 
   }
 
   const [data, total] = await Promise.all([
     query.exec(),
-    model.countDocuments(filter),
+    model.countDocuments(filter, { strictQuery: true }),
   ]);
 
   return {

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Product } from "../../models/product.model";
+import { Product, ProductStatus } from "../../models/product.model";
 import { ApiResponse, ApiError } from "../../utils/ApiResponse";
 import { paginate } from "../../utils/pagination";
 
@@ -19,7 +19,8 @@ export class ProductController {
         maxPrice,
         isFeatured,
         isNew,
-        status = "active",
+        status = ProductStatus.ACTIVE,
+        search
       } = req.query;
 
       const filter: any = { status };
@@ -30,6 +31,7 @@ export class ProductController {
       if (productType) filter.productType = productType;
       if (isFeatured !== undefined) filter.isFeatured = isFeatured === "true";
       if (isNew !== undefined) filter.isNew = isNew === "true";
+      if (search) filter.$text = { $search: search as string };
 
       // Price range filter
       if (minPrice || maxPrice) {
@@ -62,7 +64,6 @@ export class ProductController {
   async searchProducts(req: Request, res: Response, next: NextFunction) {
     try {
       const {
-        q,
         page = 1,
         limit = 10,
         sort = "createdAt",
@@ -72,22 +73,18 @@ export class ProductController {
         productType,
         minPrice,
         maxPrice,
+        search,
       } = req.query;
 
       const filter: any = {
-        status: "active",
-        $text: { $search: q as string },
+        status: ProductStatus.ACTIVE,
       };
-
-      if(q){
-        filter.$text = { $search: q as string };
-      }
 
       // Apply additional filters
       if (category) filter.category = category;
       if (brand) filter.brand = brand;
       if (productType) filter.productType = productType;
-
+      if (search) filter.$text = { $search: search as string };
       // Price range filter
       if (minPrice || maxPrice) {
         filter.basePrice = {};
@@ -125,7 +122,7 @@ export class ProductController {
       const { limit = 8 } = req.query;
 
       const products = await Product.find({
-        status: "active",
+        status: ProductStatus.ACTIVE,
         isFeatured: true,
       })
         .populate("category", "name slug")
@@ -145,7 +142,7 @@ export class ProductController {
       const { limit = 8 } = req.query;
 
       const products = await Product.find({
-        status: "active",
+        status: ProductStatus.ACTIVE,
         isNew: true,
       })
         .populate("category", "name slug")
@@ -173,7 +170,7 @@ export class ProductController {
       } = req.query;
 
       const filter: any = {
-        status: "active",
+        status: ProductStatus.ACTIVE,
         category: categoryId,
       };
 
@@ -218,7 +215,7 @@ export class ProductController {
       } = req.query;
 
       const filter: any = {
-        status: "active",
+        status: ProductStatus.ACTIVE,
         brand: brandId,
       };
 
@@ -263,7 +260,7 @@ export class ProductController {
       } = req.query;
 
       const filter: any = {
-        status: "active",
+        status: ProductStatus.ACTIVE,
         productType,
       };
 
@@ -301,7 +298,7 @@ export class ProductController {
 
       const product = await Product.findOne({
         _id: id,
-        status: "active",
+        status: ProductStatus.ACTIVE,
       })
         .populate("category", "name slug")
         .populate("brand", "name slug logo");
@@ -323,7 +320,7 @@ export class ProductController {
 
       const product = await Product.findOne({
         _id: id,
-        status: "active",
+        status: ProductStatus.ACTIVE,
       }).select("variants");
 
       if (!product) {
@@ -362,7 +359,7 @@ export class ProductController {
       // Find related products based on category and product type
       const relatedProducts = await Product.find({
         _id: { $ne: id },
-        status: "active",
+        status: ProductStatus.ACTIVE,
         $or: [
           { category: currentProduct.category },
           { productType: currentProduct.productType },
@@ -384,7 +381,7 @@ export class ProductController {
     try {
       const { category, brand, productType } = req.query;
 
-      const filter: any = { status: "active" };
+      const filter: any = { status: ProductStatus.ACTIVE };
       if (category) filter.category = category;
       if (brand) filter.brand = brand;
       if (productType) filter.productType = productType;
@@ -413,7 +410,7 @@ export class ProductController {
     try {
       const { category, brand, productType } = req.query;
 
-      const filter: any = { status: "active" };
+      const filter: any = { status: ProductStatus.ACTIVE };
       if (category) filter.category = category;
       if (brand) filter.brand = brand;
       if (productType) filter.productType = productType;
@@ -449,7 +446,7 @@ export class ProductController {
     try {
       const { category, brand, productType } = req.query;
 
-      const filter: any = { status: "active" };
+      const filter: any = { status: ProductStatus.ACTIVE };
       if (category) filter.category = category;
       if (brand) filter.brand = brand;
       if (productType) filter.productType = productType;

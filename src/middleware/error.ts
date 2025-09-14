@@ -17,6 +17,7 @@ export const errorHandler = (
       message: err.message,
       stack: err.stack,
       path: req.path,
+      url: req.baseUrl,
       method: req.method,
     })
   );
