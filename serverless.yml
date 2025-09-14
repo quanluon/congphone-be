@@ -8,11 +8,10 @@ provider:
   stage: ${opt:stage, 'dev'}
   region: ${opt:region, 'ap-southeast-1'}
   memorySize: 512
-  timeout: 30
+  timeout: 29
   environment:
     NODE_ENV: ${self:provider.stage}
     MONGODB_URI: ${env:MONGODB_URI}
-    AWS_REGION: ${self:provider.region}
     S3_BUCKET: ${env:S3_BUCKET}
     COGNITO_USER_POOL_ID: ${env:COGNITO_USER_POOL_ID}
     COGNITO_CLIENT_ID: ${env:COGNITO_CLIENT_ID}
@@ -42,6 +41,7 @@ provider:
 functions:
   api:
     handler: dist/src/handler.handler
+    timeout: 29
     events:
       - http:
           path: /{proxy+}
@@ -68,7 +68,18 @@ custom:
 
 package:
   patterns:
-    - '!node_modules/**'
+    - '!node_modules/.cache/**'
+    - '!node_modules/@types/**'
+    - '!node_modules/typescript/**'
+    - '!node_modules/ts-node/**'
+    - '!node_modules/ts-node-dev/**'
+    - '!node_modules/nodemon/**'
+    - '!node_modules/jest/**'
+    - '!node_modules/ts-jest/**'
+    - '!node_modules/esbuild/**'
+    - '!node_modules/serverless/**'
+    - '!node_modules/serverless-offline/**'
+    - '!node_modules/serverless-dotenv-plugin/**'
     - '!src/**'
     - '!*.md'
     - '!*.yml'
@@ -77,3 +88,4 @@ package:
     - '!.git/**'
     - '!dist/**'
     - 'dist/**'
+    - 'node_modules/**'

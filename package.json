@@ -13,7 +13,7 @@
     "dev:hot": "NODE_OPTIONS='--max-old-space-size=1024' serverless offline --reloadHandler",
     "dev:watch": "nodemon --exec \"npm run dev\" --watch src --ext ts,js,json",
     "dev:ts": "ts-node-dev --respawn --transpile-only --clear src/handler.ts",
-    "deploy": "serverless deploy",
+    "deploy": "serverless deploy --force",
     "build": "tsc",
     "start": "node dist/handler.js",
     "test": "jest",

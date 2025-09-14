@@ -30,18 +30,25 @@ export interface IProductVariant {
   originalPrice?: number; // For showing discounts
   stock: number;
   images: string[];
-  specifications: Record<string, any>;
+  attributes: IProductAttribute[]; // Structured attributes for variant-specific specs
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface IProductAttribute {
+  name: string;
+  value: string;
+  unit?: string;
+  category?: string; // e.g., "Display", "Performance", "Camera", etc.
 }
 
 export interface IProduct {
   _id?: mongoose.Types.ObjectId;
   name: string; // e.g., "iPhone 14 Plus"
   slug: string; // e.g., "iphone-14-plus"
-  description: string;
-  shortDescription?: string;
+  description: string; // Rich text content (HTML/JSON)
+  shortDescription?: string; // Plain text
   category: mongoose.Types.ObjectId;
   brand: mongoose.Types.ObjectId;
   productType: ProductType;
@@ -50,7 +57,7 @@ export interface IProduct {
   originalBasePrice?: number; // For showing discounts
   images: string[]; // Main product images
   features: string[]; // Key features array
-  specifications: Record<string, any>; // Common specifications
+  attributes: IProductAttribute[]; // Structured attributes
   status: ProductStatus;
   isFeatured: boolean;
   isNew: boolean;
@@ -115,11 +122,28 @@ const productVariantSchema = new mongoose.Schema<IProductVariant>(
         required: true,
       },
     ],
-    specifications: {
-      type: Map,
-      of: mongoose.Schema.Types.Mixed,
-      default: {},
-    },
+    attributes: [
+      {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        value: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        unit: {
+          type: String,
+          trim: true,
+        },
+        category: {
+          type: String,
+          trim: true,
+        },
+      },
+    ],
     isActive: {
       type: Boolean,
       default: true,
@@ -188,11 +212,28 @@ const productSchema = new mongoose.Schema<IProduct>(
         trim: true,
       },
     ],
-    specifications: {
-      type: Map,
-      of: mongoose.Schema.Types.Mixed,
-      default: {},
-    },
+    attributes: [
+      {
+        name: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        value: {
+          type: String,
+          required: true,
+          trim: true,
+        },
+        unit: {
+          type: String,
+          trim: true,
+        },
+        category: {
+          type: String,
+          trim: true,
+        },
+      },
+    ],
     status: {
       type: String,
       enum: ProductStatus,
@@ -248,6 +289,8 @@ productSchema.index({
   description: "text",
   shortDescription: "text",
   tags: "text",
+  "attributes.name": "text",
+  "attributes.value": "text",
 });
 
 // Add indexes for performance

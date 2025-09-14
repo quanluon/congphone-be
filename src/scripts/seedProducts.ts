@@ -46,7 +46,7 @@ async function seedProducts() {
       // iPhone 15 Pro
       {
         name: 'iPhone 15 Pro',
-        description: 'The iPhone 15 Pro features a titanium design, A17 Pro chip, and advanced camera system with 48MP main camera. Experience the power of Pro with enhanced performance and durability.',
+        description: '<h2>Experience the Power of Pro</h2><p>The iPhone 15 Pro features a <strong>titanium design</strong> that&apos;s both beautiful and durable. Powered by the <em>A17 Pro chip</em>, it delivers incredible performance for everything you do.</p><h3>Advanced Camera System</h3><p>Capture stunning photos with the <strong>48MP main camera</strong> that features a larger sensor and advanced computational photography. The Pro camera system includes:</p><ul><li>48MP Main camera with 2x Telephoto</li><li>12MP Ultra Wide camera</li><li>12MP Telephoto camera with 3x optical zoom</li><li>ProRAW and ProRes video recording</li></ul><h3>Premium Materials</h3><p>Built with <strong>titanium</strong> - the same material used in spacecraft - for incredible strength and lightness. The Ceramic Shield front is tougher than any smartphone glass.</p>',
         shortDescription: 'Titanium design with A17 Pro chip and 48MP camera',
         category: smartphoneCategory._id,
         brand: appleBrand._id,
@@ -65,15 +65,20 @@ async function seedProducts() {
           'USB-C connector',
           'Pro camera system'
         ],
-        specifications: {
-          display: '6.1-inch Super Retina XDR display',
-          processor: 'A17 Pro chip',
-          storage: '128GB, 256GB, 512GB, 1TB',
-          camera: '48MP Main, 12MP Ultra Wide, 12MP Telephoto',
-          battery: 'Up to 23 hours video playback',
-          connectivity: '5G, Wi-Fi 6E, Bluetooth 5.3',
-          materials: 'Titanium with Ceramic Shield front'
-        },
+        attributes: [
+          { name: 'Display', value: '6.1-inch Super Retina XDR', category: 'Display' },
+          { name: 'Processor', value: 'A17 Pro chip', category: 'Performance' },
+          { name: 'Storage Options', value: '128GB, 256GB, 512GB, 1TB', category: 'Storage' },
+          { name: 'Main Camera', value: '48MP', category: 'Camera' },
+          { name: 'Ultra Wide Camera', value: '12MP', category: 'Camera' },
+          { name: 'Telephoto Camera', value: '12MP with 3x optical zoom', category: 'Camera' },
+          { name: 'Battery Life', value: 'Up to 23 hours', unit: 'video playback', category: 'Battery' },
+          { name: '5G', value: 'Yes', category: 'Connectivity' },
+          { name: 'Wi-Fi', value: 'Wi-Fi 6E', category: 'Connectivity' },
+          { name: 'Bluetooth', value: '5.3', category: 'Connectivity' },
+          { name: 'Materials', value: 'Titanium with Ceramic Shield front', category: 'Design' },
+          { name: 'Water Resistance', value: 'IP68', category: 'Design' }
+        ],
         status: ProductStatus.ACTIVE,
         isFeatured: true,
         isNew: true,
@@ -89,12 +94,14 @@ async function seedProducts() {
             originalPrice: 1099,
             stock: 50,
             images: ['https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-finish-select-202309-6-1inch-naturaltitanium?wid=2560&hei=1440&fmt=p-jpg&qlt=80&.v=1693009279821'],
-            specifications: {
-              display: '6.1-inch Super Retina XDR',
-              processor: 'A17 Pro chip',
-              storage: '128GB',
-              camera: '48MP Main, 12MP Ultra Wide, 12MP Telephoto'
-            },
+            attributes: [
+              { name: 'Display', value: '6.1-inch Super Retina XDR', category: 'Display' },
+              { name: 'Processor', value: 'A17 Pro chip', category: 'Performance' },
+              { name: 'Storage', value: '128GB', category: 'Storage' },
+              { name: 'Main Camera', value: '48MP', category: 'Camera' },
+              { name: 'Ultra Wide Camera', value: '12MP', category: 'Camera' },
+              { name: 'Telephoto Camera', value: '12MP with 3x optical zoom', category: 'Camera' }
+            ],
             isActive: true
           },
           {
@@ -107,12 +114,14 @@ async function seedProducts() {
             originalPrice: 1199,
             stock: 30,
             images: ['https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-finish-select-202309-6-1inch-bluetitanium?wid=2560&hei=1440&fmt=p-jpg&qlt=80&.v=1693009279821'],
-            specifications: {
-              display: '6.1-inch Super Retina XDR',
-              processor: 'A17 Pro chip',
-              storage: '256GB',
-              camera: '48MP Main, 12MP Ultra Wide, 12MP Telephoto'
-            },
+            attributes: [
+              { name: 'Display', value: '6.1-inch Super Retina XDR', category: 'Display' },
+              { name: 'Processor', value: 'A17 Pro chip', category: 'Performance' },
+              { name: 'Storage', value: '256GB', category: 'Storage' },
+              { name: 'Main Camera', value: '48MP', category: 'Camera' },
+              { name: 'Ultra Wide Camera', value: '12MP', category: 'Camera' },
+              { name: 'Telephoto Camera', value: '12MP with 3x optical zoom', category: 'Camera' }
+            ],
             isActive: true
           },
           {
@@ -125,12 +134,14 @@ async function seedProducts() {
             originalPrice: 1399,
             stock: 20,
             images: ['https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-finish-select-202309-6-1inch-whitetitanium?wid=2560&hei=1440&fmt=p-jpg&qlt=80&.v=1693009279821'],
-            specifications: {
-              display: '6.1-inch Super Retina XDR',
-              processor: 'A17 Pro chip',
-              storage: '512GB',
-              camera: '48MP Main, 12MP Ultra Wide, 12MP Telephoto'
-            },
+            attributes: [
+              { name: 'Display', value: '6.1-inch Super Retina XDR', category: 'Display' },
+              { name: 'Processor', value: 'A17 Pro chip', category: 'Performance' },
+              { name: 'Storage', value: '512GB', category: 'Storage' },
+              { name: 'Main Camera', value: '48MP', category: 'Camera' },
+              { name: 'Ultra Wide Camera', value: '12MP', category: 'Camera' },
+              { name: 'Telephoto Camera', value: '12MP with 3x optical zoom', category: 'Camera' }
+            ],
             isActive: true
           }
         ]
@@ -139,7 +150,7 @@ async function seedProducts() {
       // iPhone 15 Pro Max
       {
         name: 'iPhone 15 Pro Max',
-        description: 'The iPhone 15 Pro Max features the largest display in the Pro lineup with a 6.7-inch Super Retina XDR display, A17 Pro chip, and advanced camera system with 5x Telephoto zoom.',
+        description: '<h2>The Ultimate Pro Experience</h2><p>The iPhone 15 Pro Max features the <strong>largest display</strong> in the Pro lineup with a stunning 6.7-inch Super Retina XDR display. Powered by the <em>A17 Pro chip</em>, it delivers unmatched performance.</p><h3>Revolutionary Camera System</h3><p>Experience the most advanced camera system ever in an iPhone with the <strong>5x Telephoto zoom</strong>. Capture incredible detail from far away with the longest optical zoom range in iPhone history.</p><h3>Pro Features</h3><ul><li>6.7-inch Super Retina XDR display</li><li>A17 Pro chip with 6-core GPU</li><li>48MP Main camera with 5x Telephoto</li><li>Titanium design for strength and lightness</li><li>Action Button for quick access</li><li>USB-C connector</li></ul>',
         shortDescription: 'Largest Pro display with 5x Telephoto zoom',
         category: smartphoneCategory._id,
         brand: appleBrand._id,
@@ -157,15 +168,20 @@ async function seedProducts() {
           'Action Button',
           'USB-C connector'
         ],
-        specifications: {
-          display: '6.7-inch Super Retina XDR display',
-          processor: 'A17 Pro chip',
-          storage: '256GB, 512GB, 1TB',
-          camera: '48MP Main, 12MP Ultra Wide, 12MP Telephoto (5x zoom)',
-          battery: 'Up to 29 hours video playback',
-          connectivity: '5G, Wi-Fi 6E, Bluetooth 5.3',
-          materials: 'Titanium with Ceramic Shield front'
-        },
+        attributes: [
+          { name: 'Display', value: '6.7-inch Super Retina XDR', category: 'Display' },
+          { name: 'Processor', value: 'A17 Pro chip', category: 'Performance' },
+          { name: 'Storage Options', value: '256GB, 512GB, 1TB', category: 'Storage' },
+          { name: 'Main Camera', value: '48MP', category: 'Camera' },
+          { name: 'Ultra Wide Camera', value: '12MP', category: 'Camera' },
+          { name: 'Telephoto Camera', value: '12MP with 5x optical zoom', category: 'Camera' },
+          { name: 'Battery Life', value: 'Up to 29 hours', unit: 'video playback', category: 'Battery' },
+          { name: '5G', value: 'Yes', category: 'Connectivity' },
+          { name: 'Wi-Fi', value: 'Wi-Fi 6E', category: 'Connectivity' },
+          { name: 'Bluetooth', value: '5.3', category: 'Connectivity' },
+          { name: 'Materials', value: 'Titanium with Ceramic Shield front', category: 'Design' },
+          { name: 'Water Resistance', value: 'IP68', category: 'Design' }
+        ],
         status: ProductStatus.ACTIVE,
         isFeatured: true,
         isNew: true,
@@ -181,12 +197,14 @@ async function seedProducts() {
             originalPrice: 1299,
             stock: 25,
             images: ['https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-max-finish-select-202309-6-7inch-naturaltitanium?wid=2560&hei=1440&fmt=p-jpg&qlt=80&.v=1693009279821'],
-            specifications: {
-              display: '6.7-inch Super Retina XDR',
-              processor: 'A17 Pro chip',
-              storage: '256GB',
-              camera: '48MP Main, 12MP Ultra Wide, 12MP Telephoto (5x zoom)'
-            },
+            attributes: [
+              { name: 'Display', value: '6.7-inch Super Retina XDR', category: 'Display' },
+              { name: 'Processor', value: 'A17 Pro chip', category: 'Performance' },
+              { name: 'Storage', value: '256GB', category: 'Storage' },
+              { name: 'Main Camera', value: '48MP', category: 'Camera' },
+              { name: 'Ultra Wide Camera', value: '12MP', category: 'Camera' },
+              { name: 'Telephoto Camera', value: '12MP with 5x optical zoom', category: 'Camera' }
+            ],
             isActive: true
           },
           {
@@ -199,12 +217,14 @@ async function seedProducts() {
             originalPrice: 1499,
             stock: 15,
             images: ['https://store.storeimages.cdn-apple.com/4982/as-images.apple.com/is/iphone-15-pro-max-finish-select-202309-6-7inch-bluetitanium?wid=2560&hei=1440&fmt=p-jpg&qlt=80&.v=1693009279821'],
-            specifications: {
-              display: '6.7-inch Super Retina XDR',
-              processor: 'A17 Pro chip',
-              storage: '512GB',
-              camera: '48MP Main, 12MP Ultra Wide, 12MP Telephoto (5x zoom)'
-            },
+            attributes: [
+              { name: 'Display', value: '6.7-inch Super Retina XDR', category: 'Display' },
+              { name: 'Processor', value: 'A17 Pro chip', category: 'Performance' },
+              { name: 'Storage', value: '512GB', category: 'Storage' },
+              { name: 'Main Camera', value: '48MP', category: 'Camera' },
+              { name: 'Ultra Wide Camera', value: '12MP', category: 'Camera' },
+              { name: 'Telephoto Camera', value: '12MP with 5x optical zoom', category: 'Camera' }
+            ],
             isActive: true
           }
         ]
