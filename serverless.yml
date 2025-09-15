@@ -40,7 +40,7 @@ provider:
 
 functions:
   api:
-    handler: dist/src/handler.handler
+    handler: dist/handler.handler
     timeout: 29
     events:
       - http:
@@ -68,6 +68,7 @@ custom:
 
 package:
   patterns:
+    # Exclude development files
     - '!node_modules/.cache/**'
     - '!node_modules/@types/**'
     - '!node_modules/typescript/**'
@@ -77,6 +78,7 @@ package:
     - '!node_modules/jest/**'
     - '!node_modules/ts-jest/**'
     - '!node_modules/esbuild/**'
+    - '!node_modules/esbuild-visualizer/**'
     - '!node_modules/serverless/**'
     - '!node_modules/serverless-offline/**'
     - '!node_modules/serverless-dotenv-plugin/**'
@@ -84,8 +86,44 @@ package:
     - '!*.md'
     - '!*.yml'
     - '!*.yaml'
+    - '!*.json'
     - '!.env*'
     - '!.git/**'
+    - '!.esbuild/**'
+    - '!scripts/**'
+    - '!tests/**'
+    - '!__tests__/**'
+    - '!*.test.js'
+    - '!*.test.ts'
+    - '!*.spec.js'
+    - '!*.spec.ts'
+    - '!tsconfig*.json'
+    - '!nodemon.json'
+    - '!jest.config.js'
     - '!dist/**'
-    - 'dist/**'
+    # Include only necessary files
+    - 'dist/handler.js'
+    - 'dist/handler.js.map'
     - 'node_modules/**'
+    # Exclude large unnecessary node_modules
+    - '!node_modules/**/test/**'
+    - '!node_modules/**/tests/**'
+    - '!node_modules/**/__tests__/**'
+    - '!node_modules/**/*.test.js'
+    - '!node_modules/**/*.test.ts'
+    - '!node_modules/**/*.spec.js'
+    - '!node_modules/**/*.spec.ts'
+    - '!node_modules/**/docs/**'
+    - '!node_modules/**/doc/**'
+    - '!node_modules/**/examples/**'
+    - '!node_modules/**/example/**'
+    - '!node_modules/**/benchmark/**'
+    - '!node_modules/**/benchmarks/**'
+    - '!node_modules/**/*.md'
+    - '!node_modules/**/*.txt'
+    - '!node_modules/**/*.yml'
+    - '!node_modules/**/*.yaml'
+    - '!node_modules/**/LICENSE*'
+    - '!node_modules/**/CHANGELOG*'
+    - '!node_modules/**/HISTORY*'
+    - '!node_modules/**/README*'

@@ -1,6 +1,7 @@
 import { User, IUser, UserType, UserStatus } from '../models/user.model';
 import { cognitoService, CognitoUser, LoginResponse, RegisterRequest } from './cognito.service';
 import { ApiError } from '../utils/ApiResponse';
+import { Document } from 'mongoose';
 
 export interface AuthUser extends IUser {
   fullName: string;
@@ -8,7 +9,7 @@ export interface AuthUser extends IUser {
 
 export class AuthService {
   /**
-   * Register a new user (admin only)
+   * Register a new user
    */
   async registerUser(data: RegisterRequest, createdBy?: string): Promise<AuthUser> {
     try {
@@ -22,7 +23,7 @@ export class AuthService {
         firstName: cognitoUser.firstName,
         lastName: cognitoUser.lastName,
         phone: cognitoUser.phone,
-        type: data.userType === 'admin' ? UserType.ADMIN : UserType.CUSTOMER,
+        type: data.userType === UserType.ADMIN ? UserType.ADMIN : UserType.CUSTOMER,
         status: UserStatus.ACTIVE,
       };
 
@@ -84,6 +85,20 @@ export class AuthService {
         throw error;
       }
       throw new ApiError(500, 'Token refresh failed', error, 'tokenRefreshFailed');
+    }
+  }
+
+  /**
+   * Logout user
+   */
+  async logout(accessToken: string): Promise<void> {
+    try {
+      await cognitoService.logout(accessToken);
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(500, 'Logout failed', error, 'logoutFailed');
     }
   }
 
@@ -265,13 +280,14 @@ export class AuthService {
   /**
    * Format user for response
    */
-  private formatUser(user: IUser): AuthUser {
+  private formatUser(user: Document): AuthUser {
+    const userJson = user.toJSON();
     return {
-      ...user,
-      fullName: user.firstName && user.lastName 
-        ? `${user.firstName} ${user.lastName}` 
-        : user.firstName || user.lastName || '',
-    };
+      ...userJson,
+      fullName: userJson.firstName && userJson.lastName 
+        ? `${userJson.firstName} ${userJson.lastName}` 
+        : userJson.firstName || userJson.lastName || '',
+    } as AuthUser;
   }
 }
 

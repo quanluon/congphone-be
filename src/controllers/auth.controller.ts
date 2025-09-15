@@ -6,6 +6,30 @@ import { UserType } from "../models/user.model";
 
 export class AuthController {
   /**
+   * Register a new user (public)
+   */
+  async registerPublic(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password, firstName, lastName, phone } = req.body;
+
+      const user = await authService.registerUser({
+        email,
+        password,
+        firstName,
+        lastName,
+        phone,
+        userType: UserType.CUSTOMER,
+      });
+
+      res.status(201).json(
+        ApiResponse.success(user, 'User registered successfully').build()
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Register a new user (admin only)
    */
   async register(req: Request, res: Response, next: NextFunction) {
@@ -24,7 +48,7 @@ export class AuthController {
         firstName,
         lastName,
         phone,
-        userType: userType || 'customer',
+        userType: userType || UserType.CUSTOMER,
       }, currentUser._id?.toString());
 
       res.status(201).json(
@@ -66,6 +90,34 @@ export class AuthController {
 
       res.json(
         ApiResponse.success(result, 'Token refreshed successfully').build()
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Logout user
+   */
+  async logout(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = getCurrentUser(req);
+      
+      if (!user) {
+        throw new ApiError(401, 'User not authenticated', null, 'authenticationFailed');
+      }
+
+      // Get access token from Authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new ApiError(401, 'Access token required', null, 'accessTokenRequired');
+      }
+
+      const accessToken = authHeader.substring(7); // Remove 'Bearer ' prefix
+      await authService.logout(accessToken);
+
+      res.json(
+        ApiResponse.success(null, 'Logout successful').build()
       );
     } catch (error) {
       next(error);
@@ -132,11 +184,6 @@ export class AuthController {
     try {
       const user = getCurrentUser(req);
       const { firstName, lastName, phone, profileImage } = req.body;
-
-      if (!user) {
-        throw new ApiError(401, 'User not authenticated', null, 'authenticationFailed');
-      }
-
       const updatedUser = await authService.updateUserProfile(user.cognitoId, {
         firstName,
         lastName,
@@ -157,12 +204,6 @@ export class AuthController {
    */
   async getAllUsers(req: Request, res: Response, next: NextFunction) {
     try {
-      const currentUser = getCurrentUser(req);
-
-      if (currentUser?.type !== UserType.ADMIN) {
-        throw new ApiError(403, 'Admin access required', null, 'adminAccessRequired');
-      }
-
       const { page = 1, limit = 10, userType, status } = req.query;
 
       const result = await authService.getAllUsers(
@@ -187,11 +228,6 @@ export class AuthController {
     try {
       const currentUser = getCurrentUser(req);
       const { email } = req.params;
-
-      if (currentUser?.type !== UserType.ADMIN) {
-        throw new ApiError(403, 'Admin access required', null, 'adminAccessRequired');
-      }
-
       await authService.deactivateUser(email, currentUser._id?.toString() || '');
 
       res.json(
@@ -207,13 +243,7 @@ export class AuthController {
    */
   async getUserById(req: Request, res: Response, next: NextFunction) {
     try {
-      const currentUser = getCurrentUser(req);
       const { id } = req.params;
-
-      if (currentUser?.type !== UserType.ADMIN) {
-        throw new ApiError(403, 'Admin access required', null, 'adminAccessRequired');
-      }
-
       const user = await authService.getUserByEmail(id);
 
       if (!user) {

@@ -14,8 +14,8 @@ router.get("/health", (req, res) => {
 // Authentication APIs - prefix with /auth
 router.use("/auth", authRoutes);
 
-// Public APIs - prefix with /api
-router.use("/api", commonRoutes);
+// Public APIs - prefix with /api (with optional auth)
+router.use("/api", optionalAuth, commonRoutes);
 
 // File APIs - prefix with /files
 router.use("/files", fileRoutes);

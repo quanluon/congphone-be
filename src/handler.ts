@@ -1,7 +1,6 @@
 import express from 'express';
 import serverless from 'serverless-http';
 import cors from 'cors';
-import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 
 // Routes
@@ -31,7 +30,7 @@ app.use(express.json());
 app.use(requestLogger);
 
 // Routes
-app.use('/',optionalAuth, routes);
+app.use('/', routes);
 
 // Error handling middleware
 app.use(errorHandler);

@@ -1,18 +1,19 @@
 import {
-  CognitoIdentityProviderClient,
   AdminCreateUserCommand,
-  AdminSetUserPasswordCommand,
-  AdminInitiateAuthCommand,
-  AdminRespondToAuthChallengeCommand,
-  ForgotPasswordCommand,
-  ConfirmForgotPasswordCommand,
   AdminDeleteUserCommand,
   AdminGetUserCommand,
+  AdminInitiateAuthCommand,
+  AdminSetUserPasswordCommand,
   AdminUpdateUserAttributesCommand,
   AttributeType,
+  CognitoIdentityProviderClient,
+  ConfirmForgotPasswordCommand,
+  ForgotPasswordCommand,
+  GlobalSignOutCommand,
+  InitiateAuthCommand
 } from '@aws-sdk/client-cognito-identity-provider';
-import { ApiError } from '../utils/ApiResponse';
 import { EnvVariables } from '../config/env';
+import { ApiError } from '../utils/ApiResponse';
 
 export interface CognitoTokens {
   accessToken: string;
@@ -51,6 +52,17 @@ export class CognitoService {
   private clientId: string;
 
   constructor() {
+    // Validate required environment variables
+    if (!EnvVariables.AWS_REGION) {
+      throw new Error('AWS_REGION environment variable is required');
+    }
+    if (!EnvVariables.COGNITO_USER_POOL_ID) {
+      throw new Error('COGNITO_USER_POOL_ID environment variable is required');
+    }
+    if (!EnvVariables.COGNITO_CLIENT_ID) {
+      throw new Error('COGNITO_CLIENT_ID environment variable is required');
+    }
+
     this.client = new CognitoIdentityProviderClient({
       region: EnvVariables.AWS_REGION,
     });
@@ -59,20 +71,39 @@ export class CognitoService {
   }
 
   /**
-   * Register a new user (admin only)
+   * Register a new user
    */
   async registerUser(data: RegisterRequest): Promise<CognitoUser> {
     try {
+      // Validate required environment variables
+      if (!this.userPoolId || !this.clientId) {
+        throw new ApiError(500, 'Cognito configuration missing', null, 'cognitoConfigMissing');
+      }
+
+      // Use phone number as provided without validation
+      const formattedPhone = data.phone;
+
+      // Build user attributes array
+      const userAttributes: AttributeType[] = [
+        { Name: 'email', Value: data.email },
+        { Name: 'email_verified', Value: 'true' },
+      ];
+
+      // Add optional attributes only if they have values
+      if (data.firstName && data.firstName.trim()) {
+        userAttributes.push({ Name: 'given_name', Value: data.firstName.trim() });
+      }
+      if (data.lastName && data.lastName.trim()) {
+        userAttributes.push({ Name: 'family_name', Value: data.lastName.trim() });
+      }
+      if (formattedPhone) {
+        userAttributes.push({ Name: 'phone_number', Value: formattedPhone });
+      }
+
       const command = new AdminCreateUserCommand({
         UserPoolId: this.userPoolId,
         Username: data.email,
-        UserAttributes: [
-          { Name: 'email', Value: data.email },
-          { Name: 'email_verified', Value: 'true' },
-          ...(data.firstName ? [{ Name: 'given_name', Value: data.firstName }] : []),
-          ...(data.lastName ? [{ Name: 'family_name', Value: data.lastName }] : []),
-          ...(data.phone ? [{ Name: 'phone_number', Value: data.phone }] : []),
-        ],
+        UserAttributes: userAttributes,
         TemporaryPassword: data.password,
         MessageAction: 'SUPPRESS', // Don't send welcome email
       });
@@ -87,13 +118,24 @@ export class CognitoService {
         email: data.email,
         firstName: data.firstName,
         lastName: data.lastName,
-        phone: data.phone,
+        phone: formattedPhone,
         emailVerified: true,
         status: 'CONFIRMED',
       };
     } catch (error: any) {
+      console.error('Cognito registration error:', error);
+      
       if (error.name === 'UsernameExistsException') {
         throw new ApiError(409, 'User already exists', null, 'userExists');
+      }
+      if (error.name === 'InvalidParameterException') {
+        throw new ApiError(400, 'Invalid user parameters', error, 'invalidParameters');
+      }
+      if (error.name === 'InvalidPasswordException') {
+        throw new ApiError(400, 'Password does not meet requirements', null, 'invalidPassword');
+      }
+      if (error.name === 'InvalidEmailAddressException') {
+        throw new ApiError(400, 'Invalid email address', null, 'invalidEmail');
       }
       throw new ApiError(500, 'Failed to create user', error, 'userCreationFailed');
     }
@@ -104,6 +146,11 @@ export class CognitoService {
    */
   private async setUserPassword(email: string, password: string): Promise<void> {
     try {
+      // Validate password requirements
+      if (!password || password.length < 8) {
+        throw new ApiError(400, 'Password must be at least 8 characters long', null, 'invalidPassword');
+      }
+
       const command = new AdminSetUserPasswordCommand({
         UserPoolId: this.userPoolId,
         Username: email,
@@ -112,7 +159,13 @@ export class CognitoService {
       });
 
       await this.client.send(command);
-    } catch (error) {
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      if (error.name === 'InvalidPasswordException') {
+        throw new ApiError(400, 'Password does not meet requirements', null, 'invalidPassword');
+      }
       throw new ApiError(500, 'Failed to set password', error, 'passwordSetFailed');
     }
   }
@@ -122,12 +175,30 @@ export class CognitoService {
    */
   async login(email: string, password: string): Promise<LoginResponse> {
     try {
-      const command = new AdminInitiateAuthCommand({
-        UserPoolId: this.userPoolId,
+      // Validate required parameters
+      if (!email || !email.trim()) {
+        throw new ApiError(400, 'Email is required', null, 'emailRequired');
+      }
+      if (!password || !password.trim()) {
+        throw new ApiError(400, 'Password is required', null, 'passwordRequired');
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email.trim())) {
+        throw new ApiError(400, 'Invalid email format', null, 'invalidEmailFormat');
+      }
+
+      // Validate required environment variables
+      if (!this.userPoolId || !this.clientId) {
+        throw new ApiError(500, 'Cognito configuration missing', null, 'cognitoConfigMissing');
+      }
+
+      const command = new InitiateAuthCommand({
         ClientId: this.clientId,
-        AuthFlow: 'ADMIN_NO_SRP_AUTH',
+        AuthFlow: 'USER_PASSWORD_AUTH',
         AuthParameters: {
-          USERNAME: email,
+          USERNAME: email.trim(),
           PASSWORD: password,
         },
       });
@@ -150,15 +221,20 @@ export class CognitoService {
       };
 
       // Get user details
-      const user = await this.getUserByEmail(email);
+      const user = await this.getUserByEmail(email.trim());
 
       return {
         user,
         tokens,
       };
     } catch (error: any) {
+      console.error('Cognito login error:', error);
+      
       if (error instanceof ApiError) {
         throw error;
+      }
+      if (error.name === 'InvalidParameterException') {
+        throw new ApiError(400, 'Invalid login parameters', error, 'invalidLoginParameters');
       }
       if (error.name === 'NotAuthorizedException') {
         throw new ApiError(401, 'Invalid credentials', null, 'invalidCredentials');
@@ -168,6 +244,9 @@ export class CognitoService {
       }
       if (error.name === 'UserNotFoundException') {
         throw new ApiError(404, 'User not found', null, 'userNotFound');
+      }
+      if (error.name === 'TooManyRequestsException') {
+        throw new ApiError(429, 'Too many login attempts', null, 'tooManyRequests');
       }
       throw new ApiError(500, 'Login failed', error, 'loginFailed');
     }
@@ -204,6 +283,24 @@ export class CognitoService {
         throw error;
       }
       throw new ApiError(401, 'Invalid refresh token', null, 'invalidRefreshToken');
+    }
+  }
+
+  /**
+   * Logout user (global sign out)
+   */
+  async logout(accessToken: string): Promise<void> {
+    try {
+      const command = new GlobalSignOutCommand({
+        AccessToken: accessToken,
+      });
+
+      await this.client.send(command);
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(401, 'Invalid access token', null, 'invalidAccessToken');
     }
   }
 

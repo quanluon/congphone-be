@@ -126,6 +126,26 @@ Refresh expired access token using refresh token.
 }
 ```
 
+### Logout
+
+**POST** `/auth/logout`
+
+Logout user and invalidate all tokens (global sign out).
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Logout successful",
+  "data": null
+}
+```
+
 ### Forgot Password
 
 **POST** `/auth/forgot-password`

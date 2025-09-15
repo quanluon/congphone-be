@@ -141,7 +141,7 @@ export const customerOnly = async (
  * Helper function to get the authenticated user
  */
 export const getCurrentUser = (req: Request) => {
-  return req.user;
+  return req.user!;
 };
 
 /**
