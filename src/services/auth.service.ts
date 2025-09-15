@@ -1,5 +1,5 @@
 import { User, IUser, UserType, UserStatus } from '../models/user.model';
-import { cognitoService, CognitoUser, LoginResponse, RegisterRequest } from './cognito.service';
+import { cognitoService, CognitoUser, LoginResponse, RegisterRequest, SocialLoginRequest } from './cognito.service';
 import { ApiError } from '../utils/ApiResponse';
 import { Document } from 'mongoose';
 
@@ -141,6 +141,24 @@ export class AuthService {
   }
 
   /**
+   * Change password for authenticated user
+   */
+  async changePassword(
+    accessToken: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> {
+    try {
+      await cognitoService.changePassword(accessToken, currentPassword, newPassword);
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(500, 'Failed to change password', error, 'passwordChangeFailed');
+    }
+  }
+
+  /**
    * Get user by Cognito ID
    */
   async getUserByCognitoId(cognitoId: string): Promise<AuthUser | null> {
@@ -274,6 +292,51 @@ export class AuthService {
       };
     } catch (error) {
       throw new ApiError(500, 'Failed to get users', error, 'getUsersFailed');
+    }
+  }
+
+  /**
+   * Social login (Facebook/Google)
+   */
+  async socialLogin(data: SocialLoginRequest): Promise<{ user: AuthUser; tokens: any }> {
+    try {
+      // Authenticate with social provider via Cognito
+      const cognitoResponse = await cognitoService.socialLogin(data);
+
+      // Get or create user in database
+      let user = await User.findOne({ email: cognitoResponse.user.email });
+      
+      if (!user) {
+        // Create new user in database
+        const userData: Partial<IUser> = {
+          cognitoId: cognitoResponse.user.cognitoId,
+          email: cognitoResponse.user.email,
+          firstName: cognitoResponse.user.firstName,
+          lastName: cognitoResponse.user.lastName,
+          phone: cognitoResponse.user.phone,
+          type: UserType.CUSTOMER, // Social users are always customers
+          status: UserStatus.ACTIVE,
+        };
+
+        user = new User(userData);
+        await user.save();
+      } else {
+        // Update existing user with Cognito ID if not set
+        if (!user.cognitoId) {
+          user.cognitoId = cognitoResponse.user.cognitoId;
+          await user.save();
+        }
+      }
+
+      return {
+        user: this.formatUser(user),
+        tokens: cognitoResponse.tokens,
+      };
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(500, 'Social login failed', error, 'socialLoginFailed');
     }
   }
 

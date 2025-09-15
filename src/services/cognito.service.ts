@@ -10,7 +10,10 @@ import {
   ConfirmForgotPasswordCommand,
   ForgotPasswordCommand,
   GlobalSignOutCommand,
-  InitiateAuthCommand
+  InitiateAuthCommand,
+  AdminRespondToAuthChallengeCommand,
+  RespondToAuthChallengeCommand,
+  ChangePasswordCommand
 } from '@aws-sdk/client-cognito-identity-provider';
 import { EnvVariables } from '../config/env';
 import { ApiError } from '../utils/ApiResponse';
@@ -44,6 +47,21 @@ export interface RegisterRequest {
   lastName?: string;
   phone?: string;
   userType: 'customer' | 'admin';
+}
+
+export interface SocialLoginRequest {
+  provider: 'facebook' | 'google';
+  accessToken: string;
+  idToken?: string;
+}
+
+export interface SocialUserInfo {
+  id: string;
+  email: string;
+  firstName?: string;
+  lastName?: string;
+  picture?: string;
+  provider: 'facebook' | 'google';
 }
 
 export class CognitoService {
@@ -358,6 +376,47 @@ export class CognitoService {
   }
 
   /**
+   * Change password for authenticated user
+   */
+  async changePassword(
+    accessToken: string,
+    currentPassword: string,
+    newPassword: string
+  ): Promise<void> {
+    try {
+      // Validate password requirements
+      if (!newPassword || newPassword.length < 8) {
+        throw new ApiError(400, 'New password must be at least 8 characters long', null, 'invalidPassword');
+      }
+
+      const command = new ChangePasswordCommand({
+        AccessToken: accessToken,
+        PreviousPassword: currentPassword,
+        ProposedPassword: newPassword,
+      });
+
+      await this.client.send(command);
+    } catch (error: any) {
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      if (error.name === 'NotAuthorizedException') {
+        throw new ApiError(401, 'Current password is incorrect', null, 'incorrectCurrentPassword');
+      }
+      if (error.name === 'InvalidPasswordException') {
+        throw new ApiError(400, 'New password does not meet requirements', null, 'invalidNewPassword');
+      }
+      if (error.name === 'InvalidParameterException') {
+        throw new ApiError(400, 'Invalid parameters provided', null, 'invalidParameters');
+      }
+      if (error.name === 'LimitExceededException') {
+        throw new ApiError(429, 'Too many password change attempts', null, 'tooManyAttempts');
+      }
+      throw new ApiError(500, 'Failed to change password', error, 'passwordChangeFailed');
+    }
+  }
+
+  /**
    * Get user by email
    */
   async getUserByEmail(email: string): Promise<CognitoUser> {
@@ -431,6 +490,172 @@ export class CognitoService {
         throw new ApiError(404, 'User not found', null, 'userNotFound');
       }
       throw new ApiError(500, 'Failed to delete user', error, 'deleteUserFailed');
+    }
+  }
+
+  /**
+   * Get user info from social provider
+   */
+  private async getSocialUserInfo(provider: 'facebook' | 'google', accessToken: string): Promise<SocialUserInfo> {
+    try {
+      let userInfo: any;
+
+      if (provider === 'facebook') {
+        const response = await fetch(`https://graph.facebook.com/me?fields=id,email,first_name,last_name,picture&access_token=${accessToken}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch Facebook user info');
+        }
+        userInfo = await response.json();
+        
+        return {
+          id: userInfo.id,
+          email: userInfo.email,
+          firstName: userInfo.first_name,
+          lastName: userInfo.last_name,
+          picture: userInfo.picture?.data?.url,
+          provider: 'facebook'
+        };
+      } else if (provider === 'google') {
+        const response = await fetch(`https://www.googleapis.com/oauth2/v2/userinfo?access_token=${accessToken}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch Google user info');
+        }
+        userInfo = await response.json();
+        
+        return {
+          id: userInfo.id,
+          email: userInfo.email,
+          firstName: userInfo.given_name,
+          lastName: userInfo.family_name,
+          picture: userInfo.picture,
+          provider: 'google'
+        };
+      }
+
+      throw new Error('Unsupported social provider');
+    } catch (error: any) {
+      throw new ApiError(400, 'Failed to get social user info', error, 'socialUserInfoFailed');
+    }
+  }
+
+  /**
+   * Social login (Facebook/Google)
+   */
+  async socialLogin(data: SocialLoginRequest): Promise<LoginResponse> {
+    try {
+      // Get user info from social provider
+      const socialUserInfo = await this.getSocialUserInfo(data.provider, data.accessToken);
+
+      if (!socialUserInfo.email) {
+        throw new ApiError(400, 'Email is required for social login', null, 'emailRequired');
+      }
+
+      // Check if user exists in Cognito
+      let cognitoUser: CognitoUser;
+      try {
+        cognitoUser = await this.getUserByEmail(socialUserInfo.email);
+      } catch (error: any) {
+        // User doesn't exist, create new user
+        if (error.code === 'userNotFound') {
+          cognitoUser = await this.createSocialUser(socialUserInfo);
+        } else {
+          throw error;
+        }
+      }
+
+      // For social login, we need to use the social provider's token
+      // This would typically be handled by Cognito's hosted UI or custom flow
+      // For now, we'll return the user info and let the frontend handle the token exchange
+      
+      return {
+        user: cognitoUser,
+        tokens: {
+          accessToken: data.accessToken, // This should be exchanged for Cognito tokens
+          refreshToken: '', // Will be provided by Cognito after proper token exchange
+          idToken: data.idToken || '',
+          expiresIn: 3600,
+        },
+      };
+    } catch (error: any) {
+      console.error('Social login error:', error);
+      
+      if (error instanceof ApiError) {
+        throw error;
+      }
+      throw new ApiError(500, 'Social login failed', error, 'socialLoginFailed');
+    }
+  }
+
+  /**
+   * Create user from social login
+   */
+  private async createSocialUser(socialUserInfo: SocialUserInfo): Promise<CognitoUser> {
+    try {
+      // Generate a random password for social users
+      const randomPassword = Math.random().toString(36).slice(-12) + 'A1!';
+
+      const userAttributes: AttributeType[] = [
+        { Name: 'email', Value: socialUserInfo.email },
+        { Name: 'email_verified', Value: 'true' },
+      ];
+
+      if (socialUserInfo.firstName) {
+        userAttributes.push({ Name: 'given_name', Value: socialUserInfo.firstName });
+      }
+      if (socialUserInfo.lastName) {
+        userAttributes.push({ Name: 'family_name', Value: socialUserInfo.lastName });
+      }
+      if (socialUserInfo.picture) {
+        userAttributes.push({ Name: 'picture', Value: socialUserInfo.picture });
+      }
+
+      const command = new AdminCreateUserCommand({
+        UserPoolId: this.userPoolId,
+        Username: socialUserInfo.email,
+        UserAttributes: userAttributes,
+        TemporaryPassword: randomPassword,
+        MessageAction: 'SUPPRESS',
+      });
+
+      const response = await this.client.send(command);
+
+      // Set permanent password
+      await this.setUserPassword(socialUserInfo.email, randomPassword);
+
+      return {
+        cognitoId: response.User?.Username || '',
+        email: socialUserInfo.email,
+        firstName: socialUserInfo.firstName,
+        lastName: socialUserInfo.lastName,
+        emailVerified: true,
+        status: 'CONFIRMED',
+      };
+    } catch (error: any) {
+      if (error.name === 'UsernameExistsException') {
+        // User already exists, get the existing user
+        return await this.getUserByEmail(socialUserInfo.email);
+      }
+      throw new ApiError(500, 'Failed to create social user', error, 'socialUserCreationFailed');
+    }
+  }
+
+  /**
+   * Exchange social token for Cognito tokens
+   */
+  async exchangeSocialToken(provider: 'facebook' | 'google', socialToken: string): Promise<CognitoTokens> {
+    try {
+      // This is a simplified implementation
+      // In a real scenario, you would use Cognito's hosted UI or implement the proper OAuth flow
+      // For now, we'll return the social token as the access token
+      
+      return {
+        accessToken: socialToken,
+        refreshToken: '',
+        idToken: '',
+        expiresIn: 3600,
+      };
+    } catch (error: any) {
+      throw new ApiError(500, 'Failed to exchange social token', error, 'tokenExchangeFailed');
     }
   }
 }

@@ -200,6 +200,35 @@ export class AuthController {
   }
 
   /**
+   * Change user password
+   */
+  async changePassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = getCurrentUser(req);
+      const { currentPassword, newPassword } = req.body;
+
+      if (!user) {
+        throw new ApiError(401, 'User not authenticated', null, 'authenticationFailed');
+      }
+
+      // Get access token from Authorization header
+      const authHeader = req.headers.authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        throw new ApiError(401, 'Access token required', null, 'accessTokenRequired');
+      }
+
+      const accessToken = authHeader.substring(7); // Remove 'Bearer ' prefix
+      await authService.changePassword(accessToken, currentPassword, newPassword);
+
+      res.json(
+        ApiResponse.success(null, 'Password changed successfully').build()
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
    * Get all users (admin only)
    */
   async getAllUsers(req: Request, res: Response, next: NextFunction) {
@@ -252,6 +281,35 @@ export class AuthController {
 
       res.json(
         ApiResponse.success(user, 'User retrieved successfully').build()
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Social login (Facebook/Google)
+   */
+  async socialLogin(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { provider, accessToken, idToken } = req.body;
+
+      if (!provider || !accessToken) {
+        throw new ApiError(400, 'Provider and access token are required', null, 'missingSocialLoginParams');
+      }
+
+      if (!['facebook', 'google'].includes(provider)) {
+        throw new ApiError(400, 'Unsupported social provider', null, 'unsupportedProvider');
+      }
+
+      const result = await authService.socialLogin({
+        provider,
+        accessToken,
+        idToken,
+      });
+
+      res.json(
+        ApiResponse.success(result, 'Social login successful').build()
       );
     } catch (error) {
       next(error);

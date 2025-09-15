@@ -36,6 +36,11 @@ export const updateProfileSchema = Joi.object({
   profileImage: Joi.string().uri().optional(),
 });
 
+export const changePasswordSchema = Joi.object({
+  currentPassword: Joi.string().required(),
+  newPassword: Joi.string().min(8).required(),
+});
+
 export const getAllUsersSchema = Joi.object({
   page: Joi.number().min(1).default(1),
   limit: Joi.number().min(1).max(100).default(10),

@@ -3,6 +3,7 @@ import { AuthController } from "../controllers/auth.controller";
 import { adminOnly, requiredAuth } from "../middleware/auth";
 import { validate } from "../middleware/validate";
 import {
+  changePasswordSchema,
   confirmForgotPasswordSchema,
   forgotPasswordSchema,
   getAllUsersSchema,
@@ -37,6 +38,7 @@ router.post(
   validate({ body: confirmForgotPasswordSchema }),
   authController.confirmForgotPassword
 );
+router.post("/social-login", authController.socialLogin);
 
 // Protected routes (authentication required)
 router.post("/logout", requiredAuth, authController.logout);
@@ -46,6 +48,12 @@ router.put(
   requiredAuth,
   validate({ body: updateProfileSchema }),
   authController.updateProfile
+);
+router.put(
+  "/change-password",
+  requiredAuth,
+  validate({ body: changePasswordSchema }),
+  authController.changePassword
 );
 
 // Admin only routes
