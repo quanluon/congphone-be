@@ -12,7 +12,7 @@ export class AuthController {
     try {
       const { email, password, firstName, lastName, phone } = req.body;
 
-      const user = await authService.registerUser({
+       await authService.registerUser({
         email,
         password,
         firstName,
@@ -21,8 +21,13 @@ export class AuthController {
         userType: UserType.CUSTOMER,
       });
 
-      res.status(201).json(
-        ApiResponse.success(user, 'User registered successfully').build()
+      const result = await authService.login(email, password);
+
+      res.json(
+        ApiResponse.success({
+          user: result.user,
+          tokens: result.tokens,
+        }, 'User registered successfully').build()
       );
     } catch (error) {
       next(error);

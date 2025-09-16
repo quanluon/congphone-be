@@ -16,4 +16,10 @@ router.delete("/delete", fileUploadController.deleteFile.bind(fileUploadControll
 // Get file info (public URL)
 router.get("/info/:fileKey", fileUploadController.getFileInfo.bind(fileUploadController));
 
+// Move file from upload folder to permanent folder
+router.post("/move-permanent", fileUploadController.moveToPermanent.bind(fileUploadController));
+
+// Move multiple files from upload folder to permanent folder
+router.post("/move-multiple-permanent", fileUploadController.moveMultipleToPermanent.bind(fileUploadController));
+
 export default router;

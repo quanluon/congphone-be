@@ -13,7 +13,6 @@ export const validate = (schemas: ValidationSchema) => {
     const validationOptions: ValidationOptions = {
       abortEarly: false,
       allowUnknown: true,
-      stripUnknown: true,
     };
 
     try {
@@ -56,6 +55,6 @@ export const validate = (schemas: ValidationSchema) => {
 // Legacy support for old validateRequest function
 export const validateRequest = (schema: Schema) => {
   return validate({
-    body: schema
+    body: schema,
   });
 };

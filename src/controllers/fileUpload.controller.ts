@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { S3Service } from "../services/s3.service";
 import { ApiResponse, ApiError } from "../utils/ApiResponse";
+import { MAX_FILE_SIZE, MAX_FILES_PER_REQUEST } from "../constants/common";
 
 export class FileUploadController {
   private s3Service: S3Service;
@@ -28,8 +29,7 @@ export class FileUploadController {
       }
 
       // Validate file size (this is a basic check, actual validation happens on S3)
-      const maxSize = 10 * 1024 * 1024; // 10MB
-      if (req.body.fileSize && req.body.fileSize > maxSize) {
+      if (req.body.fileSize && req.body.fileSize > MAX_FILE_SIZE) {
         throw new ApiError(400, "File size exceeds 10MB limit", null, 'fileSizeExceeded');
       }
 
@@ -50,7 +50,7 @@ export class FileUploadController {
         throw new ApiError(400, "Files array is required", null, 'filesArrayRequired');
       }
 
-      if (files.length > 5) {
+      if (files.length > MAX_FILES_PER_REQUEST) {
         throw new ApiError(400, "Maximum 5 files allowed per request", null, 'maxFilesExceeded');
       }
 
@@ -73,8 +73,7 @@ export class FileUploadController {
         }
 
         // Validate file size
-        const maxSize = 10 * 1024 * 1024; // 10MB
-        if (fileSize && fileSize > maxSize) {
+        if (fileSize && fileSize > MAX_FILE_SIZE) {
           throw new ApiError(400, `File size for ${fileName} exceeds 10MB limit`, null, 'fileSizeExceeded');
         }
 
@@ -128,6 +127,48 @@ export class FileUploadController {
           fileKey,
           publicUrl,
         }).build()
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Move file from upload folder to permanent folder
+  async moveToPermanent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { fileKey, folder = "products" } = req.body;
+
+      if (!fileKey) {
+        throw new ApiError(400, "File key is required", null, 'fileKeyRequired');
+      }
+
+      const result = await this.s3Service.moveToPermanent(fileKey, folder);
+
+      res.json(
+        ApiResponse.success(result).build()
+      );
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Move multiple files from upload folder to permanent folder
+  async moveMultipleToPermanent(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { fileKeys, folder = "products" } = req.body;
+
+      if (!fileKeys || !Array.isArray(fileKeys) || fileKeys.length === 0) {
+        throw new ApiError(400, "File keys array is required", null, 'fileKeysRequired');
+      }
+
+      if (fileKeys.length > 10) {
+        throw new ApiError(400, "Maximum 10 files allowed per request", null, 'maxFilesExceeded');
+      }
+
+      const results = await this.s3Service.moveMultipleToPermanent(fileKeys, folder);
+
+      res.json(
+        ApiResponse.success({ results }).build()
       );
     } catch (error) {
       next(error);

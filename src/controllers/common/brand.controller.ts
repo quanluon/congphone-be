@@ -8,16 +8,19 @@ export class BrandController {
   // Get all brands
   async getBrands(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page = 1, limit = 10, sort = "name", order = "asc" } = req.query;
+      const { sort = "name", order = "asc" } = req.query;
 
       const sortObj: any = {};
       sortObj[sort as string] = order === "desc" ? -1 : 1;
 
-      const result = await paginate(Brand, {
-        page: Number(page),
-        limit: Number(limit),
-        sort: sortObj,
-      });
+      const brands = await Brand.find({})
+        .sort(sortObj)
+        .lean();
+
+      const result = {
+        data: brands,
+        total: brands.length
+      };
 
       res.json(ApiResponse.success(result).build());
     } catch (error) {

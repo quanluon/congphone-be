@@ -21,8 +21,6 @@ export class S3Service {
   }
 
   private generateUniqueFileName(originalName: string): string {
-    console.log("originalName", originalName);
-
     const timestamp = Date.now();
     const randomString = crypto.randomBytes(8).toString("hex");
     const extension = path.extname(originalName);
@@ -61,14 +59,23 @@ export class S3Service {
   async deleteFile(key: string) {
     const command = new DeleteObjectCommand({
       Bucket: this.bucket,
-      Key: key,
+      Key: this.getSourceKey(key),
     });
 
     await this.s3Client.send(command);
   }
 
+  getBaseUrl(): string {
+    return `https://${this.bucket}.s3.${EnvVariables.AWS_REGION}.amazonaws.com/`;
+  }
+
   getPublicUrl(key: string): string {
     return `https://${this.bucket}.s3.${EnvVariables.AWS_REGION}.amazonaws.com/${key}`;
+  }
+
+  getSourceKey(sourceUrl: string): string {
+    if(!sourceUrl) return ""
+    return sourceUrl.replace(this.getBaseUrl(), "");
   }
 
   async storePermanent(sourceKey: string, destinationKey: string, folder: string) {
@@ -83,5 +90,43 @@ export class S3Service {
     });
 
     await this.s3Client.send(command);
+    
+    return {
+      key,
+      publicUrl: this.getPublicUrl(key),
+    };
+  }
+
+  // Move file from upload folder to permanent folder
+  async moveToPermanent(sourceUrl: string, folder: string) {
+    const sourceKey = this.getSourceKey(sourceUrl);
+    const uniqueFileName = this.generateUniqueFileName(sourceKey);
+    const destinationKey = `${folder}/${uniqueFileName}`;
+
+    const command = new CopyObjectCommand({
+      Bucket: this.bucket,
+      Key: destinationKey,
+      CopySource: `${this.bucket}/${sourceKey}`,
+      ACL: "public-read",
+    });
+
+    await this.s3Client.send(command);
+
+    // Delete the original file from upload folder
+    await this.deleteFile(sourceKey);
+
+    return {
+      key: destinationKey,
+      publicUrl: this.getPublicUrl(destinationKey),
+    };
+  }
+
+  // Move multiple files from upload folder to permanent folder
+  async moveMultipleToPermanent(sourceKeys: string[], folder: string = "products") {
+    const results = await Promise.all(
+      sourceKeys.map(key => this.moveToPermanent(key, folder))
+    );
+
+    return results;
   }
 }

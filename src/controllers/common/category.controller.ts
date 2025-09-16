@@ -8,16 +8,19 @@ export class CategoryController {
   // Get all categories
   async getCategories(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page = 1, limit = 10, sort = "name", order = "asc" } = req.query;
+      const { sort = "name", order = "asc" } = req.query;
 
       const sortObj: any = {};
       sortObj[sort as string] = order === "desc" ? -1 : 1;
 
-      const result = await paginate(Category, {
-        page: Number(page),
-        limit: Number(limit),
-        sort: sortObj,
-      });
+      const categories = await Category.find({})
+        .sort(sortObj)
+        .lean();
+
+      const result = {
+        data: categories,
+        total: categories.length
+      };
 
       res.json(ApiResponse.success(result).build());
     } catch (error) {

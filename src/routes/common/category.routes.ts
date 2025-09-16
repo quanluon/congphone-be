@@ -5,10 +5,10 @@ const router = Router();
 const categoryController = new CategoryController();
 
 // Public category routes (no authentication required)
-router.get("/", categoryController.getCategories);
-router.get("/active", categoryController.getActiveCategories);
-router.get("/:id", categoryController.getCategoryById);
-router.get("/:id/products", categoryController.getCategoryProducts);
-router.get("/slug/:slug", categoryController.getCategoryBySlug);
+router.get("/", categoryController.getCategories.bind(categoryController));
+router.get("/active", categoryController.getActiveCategories.bind(categoryController));
+router.get("/:id", categoryController.getCategoryById.bind(categoryController));
+router.get("/:id/products", categoryController.getCategoryProducts.bind(categoryController));
+router.get("/slug/:slug", categoryController.getCategoryBySlug.bind(categoryController));
 
 export default router;

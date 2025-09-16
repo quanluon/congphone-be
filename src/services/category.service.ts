@@ -1,6 +1,4 @@
-import { getPaginationResponse } from "../utils/pagination";
 import { Category, ICategory } from "../models/category.model";
-import { ApiError } from "../utils/ApiResponse";
 
 export class CategoryService {
   async createCategory(categoryData: Partial<ICategory>): Promise<ICategory> {
@@ -37,11 +35,15 @@ export class CategoryService {
     if (isActive !== undefined) {
       filter.isActive = isActive;
     }
-    return Category.find(
-      filter,
-      {},
-      { sort: { _id: -1 }, lean: true, strictQuery: true }
-    );
+    
+    const categories = await Category.find(filter)
+      .sort({ name: 1 })
+      .lean();
+    
+    return {
+      data: categories,
+      total: categories.length
+    };
   }
 }
 

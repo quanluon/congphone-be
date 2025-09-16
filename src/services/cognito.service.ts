@@ -116,6 +116,7 @@ export class CognitoService {
       }
       if (formattedPhone) {
         userAttributes.push({ Name: 'phone_number', Value: formattedPhone });
+        userAttributes.push({ Name: 'phone_number_verified', Value: 'true' });
       }
 
       const command = new AdminCreateUserCommand({

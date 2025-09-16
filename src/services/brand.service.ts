@@ -20,9 +20,7 @@ export class BrandService {
   }
 
   async listBrands(query: any = {}) {
-    const { page = 1, limit = 10, search, isActive } = query;
-    const skip = (page - 1) * limit;
-
+    const { search, isActive } = query;
     const filter: any = {};
     
     if (search) {
@@ -36,22 +34,12 @@ export class BrandService {
       filter.isActive = isActive;
     }
 
-    const [brands, total] = await Promise.all([
-      Brand.find(filter)
-        .sort({ name: 1 })
-        .skip(skip)
-        .limit(limit),
-      Brand.countDocuments(filter)
-    ]);
+    const brands = await Brand.find(filter)
+      .sort({ name: 1 });
 
     return {
       data: brands,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit)
-      }
+      total: brands.length
     };
   }
 

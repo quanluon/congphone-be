@@ -1,8 +1,9 @@
+import { adminOnly, requiredAuth } from "@/middleware/auth";
 import { Router } from "express";
+import adminRoutes from "./admin";
+import authRoutes from "./auth.routes";
 import commonRoutes from "./common";
 import fileRoutes from "./file.routes";
-import authRoutes from "./auth.routes";
-import { optionalAuth } from "@/middleware/auth";
 
 const router = Router();
 
@@ -15,7 +16,10 @@ router.get("/health", (req, res) => {
 router.use("/auth", authRoutes);
 
 // Public APIs - prefix with /api (with optional auth)
-router.use("/api", optionalAuth, commonRoutes);
+router.use("/api", commonRoutes);
+
+// Admin APIs - prefix with /admin (with authentication required)
+router.use("/admin", requiredAuth, adminOnly, adminRoutes);
 
 // File APIs - prefix with /files
 router.use("/files", fileRoutes);
