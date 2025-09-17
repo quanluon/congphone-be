@@ -36,7 +36,7 @@ const productAttributeSchema = Joi.object({
 // Base product schema
 const productBaseSchema = {
   name: Joi.string().trim().min(2).max(200),
-  description: Joi.string().trim().min(10).max(5000),
+  description: Joi.string().trim().min(10),
   shortDescription: Joi.string().trim().optional(),
   category: Joi.string().pattern(/^[0-9a-fA-F]{24}$/),
   brand: Joi.string().pattern(/^[0-9a-fA-F]{24}$/),
