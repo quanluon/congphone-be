@@ -6,14 +6,12 @@ import {
   AdminSetUserPasswordCommand,
   AdminUpdateUserAttributesCommand,
   AttributeType,
+  ChangePasswordCommand,
   CognitoIdentityProviderClient,
   ConfirmForgotPasswordCommand,
   ForgotPasswordCommand,
   GlobalSignOutCommand,
-  InitiateAuthCommand,
-  AdminRespondToAuthChallengeCommand,
-  RespondToAuthChallengeCommand,
-  ChangePasswordCommand
+  InitiateAuthCommand
 } from '@aws-sdk/client-cognito-identity-provider';
 import { EnvVariables } from '../config/env';
 import { ApiError } from '../utils/ApiResponse';

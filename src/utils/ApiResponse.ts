@@ -18,8 +18,9 @@ export class ApiResponse {
 
   constructor(success: boolean, data: any = null, message?: string) {
     this.success = success;
-    this.data = data;
+    this.data = data?.data || data;
     this.message = message;
+    this.pagination = data?.pagination
   }
 
   public static success(data: any = null, message?: string): ApiResponse {
