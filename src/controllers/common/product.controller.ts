@@ -48,6 +48,7 @@ export class ProductController {
         limit: Number(limit),
         filter,
         sort: sortObj,
+        select: "-description", // Exclude description field from response for better performance
         populate: [
           { path: "category", select: "name slug" },
           { path: "brand", select: "name slug logo" },
@@ -104,6 +105,7 @@ export class ProductController {
         limit: Number(limit),
         filter,
         sort: sortObj,
+        select: "-description", // Exclude description field from response for better performance
         populate: [
           { path: "category", select: "name slug" },
           { path: "brand", select: "name slug logo" },
@@ -189,6 +191,7 @@ export class ProductController {
         limit: Number(limit),
         filter,
         sort: sortObj,
+        select: "-description", // Exclude description field from response for better performance
         populate: [
           { path: "category", select: "name slug" },
           { path: "brand", select: "name slug logo" },
@@ -234,6 +237,7 @@ export class ProductController {
         limit: Number(limit),
         filter,
         sort: sortObj,
+        select: "-description", // Exclude description field from response for better performance
         populate: [
           { path: "category", select: "name slug" },
           { path: "brand", select: "name slug logo" },
@@ -279,6 +283,7 @@ export class ProductController {
         limit: Number(limit),
         filter,
         sort: sortObj,
+        select: "-description", // Exclude description field from response for better performance
         populate: [
           { path: "category", select: "name slug" },
           { path: "brand", select: "name slug logo" },

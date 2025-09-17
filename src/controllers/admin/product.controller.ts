@@ -94,6 +94,7 @@ export class AdminProductController {
         limit: Number(limit),
         filter,
         sort: sortObj,
+        select: "-description", // Exclude description field from response
         populate: [
           { path: "category", select: "name slug" },
           { path: "brand", select: "name slug logo" },

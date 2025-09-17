@@ -48,13 +48,14 @@ export const paginate = async <T>(
     filter?: any;
     sort?: any;
     populate?: any[];
+    select?: string
   }
 ) => {
-  const { page, limit, filter = {}, sort = {}, populate = [] } = options;
+  const { page, limit, filter = {}, sort = {}, populate = [], select } = options;
   const skip = (page - 1) * limit;
 
   const query = model
-    .find(filter, null, { lean: true, strictQuery: true })
+    .find(filter, select, { lean: true, strictQuery: true })
     .sort(sort)
     .skip(skip)
     .limit(limit);
