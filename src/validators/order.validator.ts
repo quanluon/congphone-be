@@ -52,7 +52,7 @@ export const getOrdersSchema = Joi.object({
   status: Joi.string().optional().valid('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'),
   paymentStatus: Joi.string().optional().valid('pending', 'paid', 'failed', 'refunded'),
   customerEmail: Joi.string().optional().email(),
-  customerPhone: Joi.string().optional().pattern(/^(\+84|84|0)[1-9][0-9]{8}$/),
+  customerPhone: Joi.string().optional(),
   dateFrom: Joi.date().optional().iso(),
   dateTo: Joi.date().optional().iso(),
   search: Joi.string().optional().trim().min(1).max(100)
