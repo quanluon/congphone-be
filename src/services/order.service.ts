@@ -90,13 +90,30 @@ export class OrderService {
         const itemTotal = price * item.quantity;
         const itemOriginalTotal = (originalPrice || price) * item.quantity;
 
-        orderItems.push({
+        const orderItem: any = {
           product: product._id,
-          variant: item.variantId ? item.variantId as any : undefined,
           quantity: item.quantity,
           price,
           originalPrice,
-        });
+        };
+
+        // If variant is specified, store variant data directly
+        if (item.variantId && product.variants) {
+          const variant = product.variants.find((v: any) => v._id.toString() === item.variantId);
+          if (variant) {
+            orderItem.variant = {
+              name: variant.name,
+              color: variant.color,
+              colorCode: variant.colorCode,
+              storage: variant.storage,
+              size: variant.size,
+              connectivity: variant.connectivity,
+              simType: variant.simType,
+            };
+          }
+        }
+
+        orderItems.push(orderItem);
 
         totalAmount += itemTotal;
         originalTotalAmount += itemOriginalTotal;
@@ -169,7 +186,6 @@ export class OrderService {
       const [orders, total] = await Promise.all([
         Order.find(query)
           .populate('items.product', 'name slug images')
-          .populate('items.variant', 'name color storage size')
           .populate('customer.userId', 'name email')
           .sort(sort)
           .skip(skip)
@@ -195,7 +211,6 @@ export class OrderService {
     try {
       return await Order.findById(id)
         .populate('items.product', 'name slug images description')
-        .populate('items.variant', 'name color storage size connectivity simType')
         .populate('customer.userId', 'name email');
     } catch (error) {
       throw error;
@@ -206,7 +221,6 @@ export class OrderService {
     try {
       return await Order.findOne({ orderNumber })
         .populate('items.product', 'name slug images description')
-        .populate('items.variant', 'name color storage size connectivity simType')
         .populate('customer.userId', 'name email');
     } catch (error) {
       throw error;
@@ -220,7 +234,6 @@ export class OrderService {
         { $set: data },
         { new: true, runValidators: true }
       ).populate('items.product', 'name slug images')
-        .populate('items.variant', 'name color storage size')
         .populate('customer.userId', 'name email');
     } catch (error) {
       throw error;
