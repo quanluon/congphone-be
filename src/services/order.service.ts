@@ -1,5 +1,6 @@
 import { Order, IOrder, IOrderItem } from '../models/order.model';
 import { Product } from '../models/product.model';
+import { generateOrderNumber } from '../utils/order.utils';
 
 export interface CreateOrderData {
   customer: {
@@ -110,6 +111,7 @@ export class OrderService {
         totalAmount,
         originalTotalAmount: originalTotalAmount > totalAmount ? originalTotalAmount : undefined,
         discountAmount: originalTotalAmount > totalAmount ? originalTotalAmount - totalAmount : 0,
+        orderNumber: generateOrderNumber(),
       });
 
       return await order.save();

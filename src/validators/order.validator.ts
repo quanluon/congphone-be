@@ -22,7 +22,7 @@ const shippingAddressSchema = Joi.object({
   city: Joi.string().required().trim().min(2).max(50),
   district: Joi.string().required().trim().min(2).max(50),
   ward: Joi.string().required().trim().min(2).max(50),
-  postalCode: Joi.string().optional().trim().max(10)
+  postalCode: Joi.string().optional().trim().max(10).allow("")
 });
 
 // Create order schema
@@ -30,7 +30,7 @@ export const createOrderSchema = Joi.object({
   customer: customerSchema.required(),
   items: Joi.array().items(orderItemSchema).min(1).required(),
   shippingAddress: shippingAddressSchema.optional(),
-  notes: Joi.string().optional().trim().max(500),
+  notes: Joi.string().optional().trim().max(500).allow(""),
   paymentMethod: Joi.string().optional().valid('cash', 'bank_transfer', 'credit_card', 'momo', 'zalopay')
 });
 
@@ -39,7 +39,7 @@ export const updateOrderSchema = Joi.object({
   status: Joi.string().optional().valid('pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'),
   paymentStatus: Joi.string().optional().valid('pending', 'paid', 'failed', 'refunded'),
   shippingAddress: shippingAddressSchema.optional(),
-  notes: Joi.string().optional().trim().max(500),
+  notes: Joi.string().optional().trim().max(500).allow(""),
   paymentMethod: Joi.string().optional().valid('cash', 'bank_transfer', 'credit_card', 'momo', 'zalopay')
 });
 
