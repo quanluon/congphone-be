@@ -12,6 +12,7 @@ import { EnvVariables } from "../config/env";
 export class S3Service {
   private s3Client: S3Client;
   private bucket: string;
+  private defaultFolder = "uploads";
 
   constructor() {
     this.s3Client = new S3Client({
@@ -32,13 +33,9 @@ export class S3Service {
     return `${sanitizedName}-${timestamp}-${randomString}${extension}`;
   }
 
-  async getPresignedUrl(
-    fileName: string,
-    fileType: string,
-    folder: string = "uploads"
-  ) {
+  async getPresignedUrl(fileName: string, fileType: string) {
     const uniqueFileName = this.generateUniqueFileName(fileName);
-    const key = `${folder}/${uniqueFileName}`;
+    const key = `${this.defaultFolder}/${uniqueFileName}`;
 
     const command = new PutObjectCommand({
       Bucket: this.bucket,
@@ -74,32 +71,18 @@ export class S3Service {
   }
 
   getSourceKey(sourceUrl: string): string {
-    if(!sourceUrl) return ""
+    if (!sourceUrl) return "";
     return sourceUrl.replace(this.getBaseUrl(), "");
-  }
-
-  async storePermanent(sourceKey: string, destinationKey: string, folder: string) {
-    const uniqueFileName = this.generateUniqueFileName(destinationKey);
-    const key = `${folder}/${uniqueFileName}`;
-
-    const command = new CopyObjectCommand({
-      Bucket: this.bucket,
-      Key: key,
-      CopySource: `${this.bucket}/${sourceKey}`,
-      ACL: "public-read",
-    });
-
-    await this.s3Client.send(command);
-    
-    return {
-      key,
-      publicUrl: this.getPublicUrl(key),
-    };
   }
 
   // Move file from upload folder to permanent folder
   async moveToPermanent(sourceUrl: string, folder: string) {
     const sourceKey = this.getSourceKey(sourceUrl);
+    if (!sourceKey?.startsWith(this.defaultFolder))
+      return {
+        key: sourceKey,
+        publicUrl: sourceUrl,
+      };
     const uniqueFileName = this.generateUniqueFileName(sourceKey);
     const destinationKey = `${folder}/${uniqueFileName}`;
 
@@ -122,9 +105,12 @@ export class S3Service {
   }
 
   // Move multiple files from upload folder to permanent folder
-  async moveMultipleToPermanent(sourceKeys: string[], folder: string = "products") {
+  async moveMultipleToPermanent(
+    sourceKeys: string[],
+    folder: string = "products"
+  ) {
     const results = await Promise.all(
-      sourceKeys.map(key => this.moveToPermanent(key, folder))
+      sourceKeys.map((key) => this.moveToPermanent(key, folder))
     );
 
     return results;

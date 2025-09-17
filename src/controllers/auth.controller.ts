@@ -3,8 +3,10 @@ import { ApiResponse, ApiError } from "../utils/ApiResponse";
 import { authService } from "../services/auth.service";
 import { getCurrentUser } from "../middleware/auth";
 import { UserType } from "../models/user.model";
+import { S3Service } from "@/services/s3.service";
 
 export class AuthController {
+  s3Service = new S3Service();
   /**
    * Register a new user (public)
    */
@@ -12,7 +14,7 @@ export class AuthController {
     try {
       const { email, password, firstName, lastName, phone } = req.body;
 
-       await authService.registerUser({
+      await authService.registerUser({
         email,
         password,
         firstName,
@@ -24,10 +26,13 @@ export class AuthController {
       const result = await authService.login(email, password);
 
       res.json(
-        ApiResponse.success({
-          user: result.user,
-          tokens: result.tokens,
-        }, 'User registered successfully').build()
+        ApiResponse.success(
+          {
+            user: result.user,
+            tokens: result.tokens,
+          },
+          "User registered successfully"
+        ).build()
       );
     } catch (error) {
       next(error);
@@ -39,26 +44,37 @@ export class AuthController {
    */
   async register(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, password, firstName, lastName, phone, userType } = req.body;
+      const { email, password, firstName, lastName, phone, userType } =
+        req.body;
       const currentUser = getCurrentUser(req);
 
       // Only admins can register new users
       if (currentUser?.type !== UserType.ADMIN) {
-        throw new ApiError(403, 'Admin access required', null, 'adminAccessRequired');
+        throw new ApiError(
+          403,
+          "Admin access required",
+          null,
+          "adminAccessRequired"
+        );
       }
 
-      const user = await authService.registerUser({
-        email,
-        password,
-        firstName,
-        lastName,
-        phone,
-        userType: userType || UserType.CUSTOMER,
-      }, currentUser._id?.toString());
-
-      res.status(201).json(
-        ApiResponse.success(user, 'User registered successfully').build()
+      const user = await authService.registerUser(
+        {
+          email,
+          password,
+          firstName,
+          lastName,
+          phone,
+          userType: userType || UserType.CUSTOMER,
+        },
+        currentUser._id?.toString()
       );
+
+      res
+        .status(201)
+        .json(
+          ApiResponse.success(user, "User registered successfully").build()
+        );
     } catch (error) {
       next(error);
     }
@@ -74,10 +90,13 @@ export class AuthController {
       const result = await authService.login(email, password);
 
       res.json(
-        ApiResponse.success({
-          user: result.user,
-          tokens: result.tokens,
-        }, 'Login successful').build()
+        ApiResponse.success(
+          {
+            user: result.user,
+            tokens: result.tokens,
+          },
+          "Login successful"
+        ).build()
       );
     } catch (error) {
       next(error);
@@ -94,7 +113,7 @@ export class AuthController {
       const result = await authService.refreshToken(refreshToken);
 
       res.json(
-        ApiResponse.success(result, 'Token refreshed successfully').build()
+        ApiResponse.success(result, "Token refreshed successfully").build()
       );
     } catch (error) {
       next(error);
@@ -107,23 +126,31 @@ export class AuthController {
   async logout(req: Request, res: Response, next: NextFunction) {
     try {
       const user = getCurrentUser(req);
-      
+
       if (!user) {
-        throw new ApiError(401, 'User not authenticated', null, 'authenticationFailed');
+        throw new ApiError(
+          401,
+          "User not authenticated",
+          null,
+          "authenticationFailed"
+        );
       }
 
       // Get access token from Authorization header
       const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new ApiError(401, 'Access token required', null, 'accessTokenRequired');
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        throw new ApiError(
+          401,
+          "Access token required",
+          null,
+          "accessTokenRequired"
+        );
       }
 
       const accessToken = authHeader.substring(7); // Remove 'Bearer ' prefix
       await authService.logout(accessToken);
 
-      res.json(
-        ApiResponse.success(null, 'Logout successful').build()
-      );
+      res.json(ApiResponse.success(null, "Logout successful").build());
     } catch (error) {
       next(error);
     }
@@ -138,9 +165,7 @@ export class AuthController {
 
       await authService.forgotPassword(email);
 
-      res.json(
-        ApiResponse.success(null, 'Password reset email sent').build()
-      );
+      res.json(ApiResponse.success(null, "Password reset email sent").build());
     } catch (error) {
       next(error);
     }
@@ -153,10 +178,14 @@ export class AuthController {
     try {
       const { email, confirmationCode, newPassword } = req.body;
 
-      await authService.confirmForgotPassword(email, confirmationCode, newPassword);
+      await authService.confirmForgotPassword(
+        email,
+        confirmationCode,
+        newPassword
+      );
 
       res.json(
-        ApiResponse.success(null, 'Password reset successfully').build()
+        ApiResponse.success(null, "Password reset successfully").build()
       );
     } catch (error) {
       next(error);
@@ -171,11 +200,16 @@ export class AuthController {
       const user = getCurrentUser(req);
 
       if (!user) {
-        throw new ApiError(401, 'User not authenticated', null, 'authenticationFailed');
+        throw new ApiError(
+          401,
+          "User not authenticated",
+          null,
+          "authenticationFailed"
+        );
       }
 
       res.json(
-        ApiResponse.success(user, 'Profile retrieved successfully').build()
+        ApiResponse.success(user, "Profile retrieved successfully").build()
       );
     } catch (error) {
       next(error);
@@ -188,6 +222,13 @@ export class AuthController {
   async updateProfile(req: Request, res: Response, next: NextFunction) {
     try {
       const user = getCurrentUser(req);
+      if (req.body?.profileImage) {
+        const storedProfileImage = await this.s3Service.moveToPermanent(
+          req.body.profileImage,
+          "users"
+        );
+        req.body.profileImage = storedProfileImage.publicUrl;
+      }
       const { firstName, lastName, phone, profileImage } = req.body;
       const updatedUser = await authService.updateUserProfile(user.cognitoId, {
         firstName,
@@ -197,7 +238,7 @@ export class AuthController {
       });
 
       res.json(
-        ApiResponse.success(updatedUser, 'Profile updated successfully').build()
+        ApiResponse.success(updatedUser, "Profile updated successfully").build()
       );
     } catch (error) {
       next(error);
@@ -213,20 +254,34 @@ export class AuthController {
       const { currentPassword, newPassword } = req.body;
 
       if (!user) {
-        throw new ApiError(401, 'User not authenticated', null, 'authenticationFailed');
+        throw new ApiError(
+          401,
+          "User not authenticated",
+          null,
+          "authenticationFailed"
+        );
       }
 
       // Get access token from Authorization header
       const authHeader = req.headers.authorization;
-      if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new ApiError(401, 'Access token required', null, 'accessTokenRequired');
+      if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        throw new ApiError(
+          401,
+          "Access token required",
+          null,
+          "accessTokenRequired"
+        );
       }
 
       const accessToken = authHeader.substring(7); // Remove 'Bearer ' prefix
-      await authService.changePassword(accessToken, currentPassword, newPassword);
+      await authService.changePassword(
+        accessToken,
+        currentPassword,
+        newPassword
+      );
 
       res.json(
-        ApiResponse.success(null, 'Password changed successfully').build()
+        ApiResponse.success(null, "Password changed successfully").build()
       );
     } catch (error) {
       next(error);
@@ -248,7 +303,7 @@ export class AuthController {
       );
 
       res.json(
-        ApiResponse.success(result, 'Users retrieved successfully').build()
+        ApiResponse.success(result, "Users retrieved successfully").build()
       );
     } catch (error) {
       next(error);
@@ -262,10 +317,13 @@ export class AuthController {
     try {
       const currentUser = getCurrentUser(req);
       const { email } = req.params;
-      await authService.deactivateUser(email, currentUser._id?.toString() || '');
+      await authService.deactivateUser(
+        email,
+        currentUser._id?.toString() || ""
+      );
 
       res.json(
-        ApiResponse.success(null, 'User deactivated successfully').build()
+        ApiResponse.success(null, "User deactivated successfully").build()
       );
     } catch (error) {
       next(error);
@@ -281,11 +339,11 @@ export class AuthController {
       const user = await authService.getUserByEmail(id);
 
       if (!user) {
-        throw new ApiError(404, 'User not found', null, 'userNotFound');
+        throw new ApiError(404, "User not found", null, "userNotFound");
       }
 
       res.json(
-        ApiResponse.success(user, 'User retrieved successfully').build()
+        ApiResponse.success(user, "User retrieved successfully").build()
       );
     } catch (error) {
       next(error);
@@ -300,11 +358,21 @@ export class AuthController {
       const { provider, accessToken, idToken } = req.body;
 
       if (!provider || !accessToken) {
-        throw new ApiError(400, 'Provider and access token are required', null, 'missingSocialLoginParams');
+        throw new ApiError(
+          400,
+          "Provider and access token are required",
+          null,
+          "missingSocialLoginParams"
+        );
       }
 
-      if (!['facebook', 'google'].includes(provider)) {
-        throw new ApiError(400, 'Unsupported social provider', null, 'unsupportedProvider');
+      if (!["facebook", "google"].includes(provider)) {
+        throw new ApiError(
+          400,
+          "Unsupported social provider",
+          null,
+          "unsupportedProvider"
+        );
       }
 
       const result = await authService.socialLogin({
@@ -313,9 +381,7 @@ export class AuthController {
         idToken,
       });
 
-      res.json(
-        ApiResponse.success(result, 'Social login successful').build()
-      );
+      res.json(ApiResponse.success(result, "Social login successful").build());
     } catch (error) {
       next(error);
     }

@@ -47,7 +47,7 @@ router.put(
   "/profile",
   requiredAuth,
   validate({ body: updateProfileSchema }),
-  authController.updateProfile
+  authController.updateProfile.bind(authController)
 );
 router.put(
   "/change-password",
