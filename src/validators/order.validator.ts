@@ -11,13 +11,13 @@ const orderItemSchema = Joi.object({
 const customerSchema = Joi.object({
   name: Joi.string().optional().trim().min(2).max(100),
   email: Joi.string().optional().email(),
-  phone: Joi.string().required().pattern(/^(\+84|84|0)[1-9][0-9]{8}$/)
+  phone: Joi.string().required()
 });
 
 // Shipping address schema
 const shippingAddressSchema = Joi.object({
   fullName: Joi.string().required().trim().min(2).max(100),
-  phone: Joi.string().required().pattern(/^(\+84|84|0)[1-9][0-9]{8}$/),
+  phone: Joi.string().required(),
   address: Joi.string().required().trim().min(5).max(200),
   city: Joi.string().required().trim().min(2).max(50),
   district: Joi.string().required().trim().min(2).max(50),
