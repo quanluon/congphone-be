@@ -2,7 +2,15 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IOrderItem {
   product: mongoose.Types.ObjectId;
-  variant?: mongoose.Types.ObjectId;
+  variant?: {
+    name: string;
+    color: string;
+    colorCode: string;
+    storage?: string;
+    size?: string;
+    connectivity?: string;
+    simType?: string;
+  };
   quantity: number;
   price: number;
   originalPrice?: number;
@@ -45,8 +53,34 @@ const OrderItemSchema = new Schema<IOrderItem>({
     required: true,
   },
   variant: {
-    type: Schema.Types.ObjectId,
-    ref: 'ProductVariant',
+    name: {
+      type: String,
+      trim: true,
+    },
+    color: {
+      type: String,
+      trim: true,
+    },
+    colorCode: {
+      type: String,
+      trim: true,
+    },
+    storage: {
+      type: String,
+      trim: true,
+    },
+    size: {
+      type: String,
+      trim: true,
+    },
+    connectivity: {
+      type: String,
+      trim: true,
+    },
+    simType: {
+      type: String,
+      trim: true,
+    },
   },
   quantity: {
     type: Number,
