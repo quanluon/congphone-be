@@ -13,7 +13,7 @@ export class FileUploadController {
   // Get presigned URL for direct upload to S3
   async getPresignedUrl(req: Request, res: Response, next: NextFunction) {
     try {
-      const { fileName, fileType, folder = "uploads" } = req.body;
+      const { fileName, fileType } = req.body;
 
       if (!fileName || !fileType) {
         throw new ApiError(400, "FileName and fileType are required", null, 'fileNameRequired');
@@ -33,7 +33,7 @@ export class FileUploadController {
         throw new ApiError(400, "File size exceeds 10MB limit", null, 'fileSizeExceeded');
       }
 
-      const uploadUrl = await this.s3Service.getPresignedUrl(fileName, fileType, folder);
+      const uploadUrl = await this.s3Service.getPresignedUrl(fileName, fileType);
 
       res.json(ApiResponse.success(uploadUrl).build());
     } catch (error) {
@@ -44,7 +44,7 @@ export class FileUploadController {
   // Get presigned URL for multiple files
   async getMultiplePresignedUrls(req: Request, res: Response, next: NextFunction) {
     try {
-      const { files, folder = "uploads" } = req.body;
+      const { files } = req.body;
 
       if (!files || !Array.isArray(files) || files.length === 0) {
         throw new ApiError(400, "Files array is required", null, 'filesArrayRequired');
@@ -77,7 +77,7 @@ export class FileUploadController {
           throw new ApiError(400, `File size for ${fileName} exceeds 10MB limit`, null, 'fileSizeExceeded');
         }
 
-        const uploadUrl = await this.s3Service.getPresignedUrl(fileName, fileType, folder);
+        const uploadUrl = await this.s3Service.getPresignedUrl(fileName, fileType);
         uploadUrls.push({
           fileName,
           fileType,

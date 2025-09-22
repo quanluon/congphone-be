@@ -6,6 +6,7 @@ export interface ICategory {
   name: string;
   description?: string;
   slug: string;
+  image?: string;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -26,6 +27,10 @@ const categorySchema = new mongoose.Schema<ICategory>({
     type: String,
     unique: true,
     lowercase: true
+  },
+  image: {
+    type: String,
+    trim: true
   },
   isActive: {
     type: Boolean,
