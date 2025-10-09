@@ -66,8 +66,12 @@ export class S3Service {
     return `https://${this.bucket}.s3.${EnvVariables.AWS_REGION}.amazonaws.com/`;
   }
 
+  // getPublicUrl(key: string): string {
+  //   return `https://${this.bucket}.s3.${EnvVariables.AWS_REGION}.amazonaws.com/${key}`;
+  // }
+
   getPublicUrl(key: string): string {
-    return `https://${this.bucket}.s3.${EnvVariables.AWS_REGION}.amazonaws.com/${key}`;
+    return `${EnvVariables.CLOUDFRONT_STORAGE_ENDPOINT}/${key}`;
   }
 
   getSourceKey(sourceUrl: string): string {
