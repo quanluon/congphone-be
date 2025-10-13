@@ -108,17 +108,15 @@ export class TelegramService {
       })
       .join("\n\n");
 
-    // Format shipping address
+    // Format shipping address  
     const shippingInfo = order.shippingAddress
       ? `
 📍 <b>Shipping Address:</b>
-   • Name: ${order.shippingAddress.fullName}
-   • Phone: ${order.shippingAddress.phone}
-   • Address: ${order.shippingAddress.address}
-   • Ward: ${order.shippingAddress.ward}
-   • District: ${order.shippingAddress.district}
-   • City: ${order.shippingAddress.city}
-   ${order.shippingAddress.postalCode ? `• Postal Code: ${order.shippingAddress.postalCode}` : ""}`
+   ${order?.shippingAddress?.address ? `• Address: ${order?.shippingAddress?.address}` : ""}
+   ${order?.shippingAddress?.ward ? `• Ward: ${order?.shippingAddress?.ward}` : ""}
+   ${order?.shippingAddress?.district ? `• District: ${order?.shippingAddress?.district}` : ""}
+   ${order?.shippingAddress?.city ? `• City: ${order?.shippingAddress?.city}` : ""}
+   ${order?.shippingAddress?.postalCode ? `• Postal Code: ${order?.shippingAddress?.postalCode}` : ""}`
       : "";
 
     // Calculate discount percentage
