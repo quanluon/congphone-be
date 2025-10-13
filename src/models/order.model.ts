@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import { OrderStatus, PaymentStatus, PaymentMethod, ORDER_STATUSES, PAYMENT_STATUSES, PAYMENT_METHODS } from '../constants/common';
 
 export interface IOrderItem {
   product: mongoose.Types.ObjectId;
@@ -25,8 +26,8 @@ export interface IOrder extends Document {
     userId?: mongoose.Types.ObjectId;
   };
   items: IOrderItem[];
-  status: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded';
+  status: OrderStatus;
+  paymentStatus: PaymentStatus;
   shippingAddress?: {
     fullName: string;
     phone: string;
@@ -41,7 +42,7 @@ export interface IOrder extends Document {
   originalTotalAmount?: number;
   discountAmount?: number;
   shippingFee?: number;
-  paymentMethod?: string;
+  paymentMethod?: PaymentMethod;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -123,13 +124,13 @@ const OrderSchema = new Schema<IOrder>({
   items: [OrderItemSchema],
   status: {
     type: String,
-    enum: ['pending', 'confirmed', 'processing', 'shipped', 'delivered', 'cancelled'],
-    default: 'pending',
+    enum: ORDER_STATUSES,
+    default: OrderStatus.PENDING,
   },
   paymentStatus: {
     type: String,
-    enum: ['pending', 'paid', 'failed', 'refunded'],
-    default: 'pending',
+    enum: PAYMENT_STATUSES,
+    default: PaymentStatus.PENDING,
   },
   shippingAddress: {
     fullName: {
@@ -178,6 +179,7 @@ const OrderSchema = new Schema<IOrder>({
   },
   paymentMethod: {
     type: String,
+    enum: [...PAYMENT_METHODS, null],
   },
 }, {
   timestamps: true,

@@ -1,6 +1,7 @@
 import { Order, IOrder, IOrderItem } from '../models/order.model';
 import { Product } from '../models/product.model';
 import { generateOrderNumber } from '../utils/order.utils';
+import { OrderStatus, PaymentStatus, PaymentMethod } from '../constants/common';
 
 export interface CreateOrderData {
   customer: {
@@ -24,12 +25,12 @@ export interface CreateOrderData {
     postalCode?: string;
   };
   notes?: string;
-  paymentMethod?: string;
+  paymentMethod?: PaymentMethod;
 }
 
 export interface UpdateOrderData {
-  status?: 'pending' | 'confirmed' | 'processing' | 'shipped' | 'delivered' | 'cancelled';
-  paymentStatus?: 'pending' | 'paid' | 'failed' | 'refunded';
+  status?: OrderStatus;
+  paymentStatus?: PaymentStatus;
   shippingAddress?: {
     fullName: string;
     phone: string;
@@ -40,7 +41,7 @@ export interface UpdateOrderData {
     postalCode?: string;
   };
   notes?: string;
-  paymentMethod?: string;
+  paymentMethod?: PaymentMethod;
 }
 
 export interface OrderFilters {
@@ -258,28 +259,28 @@ export class OrderService {
             totalOrders: { $sum: 1 },
             totalRevenue: { $sum: '$totalAmount' },
             pendingOrders: {
-              $sum: { $cond: [{ $eq: ['$status', 'pending'] }, 1, 0] }
+              $sum: { $cond: [{ $eq: ['$status', OrderStatus.PENDING] }, 1, 0] }
             },
             confirmedOrders: {
-              $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] }
+              $sum: { $cond: [{ $eq: ['$status', OrderStatus.CONFIRMED] }, 1, 0] }
             },
             processingOrders: {
-              $sum: { $cond: [{ $eq: ['$status', 'processing'] }, 1, 0] }
+              $sum: { $cond: [{ $eq: ['$status', OrderStatus.PROCESSING] }, 1, 0] }
             },
             shippedOrders: {
-              $sum: { $cond: [{ $eq: ['$status', 'shipped'] }, 1, 0] }
+              $sum: { $cond: [{ $eq: ['$status', OrderStatus.SHIPPED] }, 1, 0] }
             },
             deliveredOrders: {
-              $sum: { $cond: [{ $eq: ['$status', 'delivered'] }, 1, 0] }
+              $sum: { $cond: [{ $eq: ['$status', OrderStatus.DELIVERED] }, 1, 0] }
             },
             cancelledOrders: {
-              $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] }
+              $sum: { $cond: [{ $eq: ['$status', OrderStatus.CANCELLED] }, 1, 0] }
             },
             paidOrders: {
-              $sum: { $cond: [{ $eq: ['$paymentStatus', 'paid'] }, 1, 0] }
+              $sum: { $cond: [{ $eq: ['$paymentStatus', PaymentStatus.PAID] }, 1, 0] }
             },
             pendingPaymentOrders: {
-              $sum: { $cond: [{ $eq: ['$paymentStatus', 'pending'] }, 1, 0] }
+              $sum: { $cond: [{ $eq: ['$paymentStatus', PaymentStatus.PENDING] }, 1, 0] }
             }
           }
         }
