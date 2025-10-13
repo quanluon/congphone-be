@@ -23,10 +23,7 @@ export class OrderController {
       });
 
       // Send Telegram notification (non-blocking)
-      telegramService.sendOrderNotification(order).catch((error) => {
-        logger.error('Failed to send Telegram notification:', error);
-      });
-
+      await telegramService.sendOrderNotification(order)
       res.status(201).json(ApiResponse.success(order, 'Order created successfully').build());
     } catch (error: any) {
       logger.error('Error creating order:', error);

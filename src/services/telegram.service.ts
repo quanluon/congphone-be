@@ -194,10 +194,11 @@ ${shippingInfo}${notesInfo}${dashboardLink}
   async sendOrderNotification(order: IOrder): Promise<boolean> {
     try {
       const message = this.formatOrderMessage(order);
-      return await this.sendMessage(message, {
+      await this.sendMessage(message, {
         parse_mode: "HTML",
         disable_web_page_preview: true,
       });
+      return true;
     } catch (error: any) {
       logger.error("Failed to send order notification to Telegram:", error);
       return false;
