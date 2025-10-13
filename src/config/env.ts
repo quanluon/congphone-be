@@ -19,4 +19,5 @@ export const EnvVariables = {
   // Telegram Configuration
   TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN!,
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID!,
+  TELEGRAM_MENTION_USER_IDS: process.env.TELEGRAM_MENTION_USER_IDS || "1659457166",
 };

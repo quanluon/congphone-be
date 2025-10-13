@@ -82,11 +82,37 @@ Add the following environment variables to your `.env` file in the `be/` directo
 # Telegram Configuration
 TELEGRAM_BOT_TOKEN=1234567890:ABCdefGHIjklMNOpqrsTUVwxyz123456789
 TELEGRAM_CHAT_ID=123456789
+TELEGRAM_MENTION_USER_IDS=1659457166
 ```
 
 Replace the values with:
 - `TELEGRAM_BOT_TOKEN`: Your bot token from BotFather
 - `TELEGRAM_CHAT_ID`: Your chat/group/channel ID from Step 2
+- `TELEGRAM_MENTION_USER_IDS`: Comma-separated list of user IDs to mention (optional)
+
+### User Mentions (Optional)
+
+You can tag specific users when new orders are created. This will send them a notification:
+
+**Single user:**
+```env
+TELEGRAM_MENTION_USER_IDS=1659457166
+```
+
+**Multiple users:**
+```env
+TELEGRAM_MENTION_USER_IDS=1659457166,987654321,555666777
+```
+
+**How to find a user's ID:**
+1. Forward a message from the user to a bot that shows user IDs (like [@userinfobot](https://t.me/userinfobot))
+2. Or use the `getUpdates` method after the user sends a message to your bot
+3. The user must have interacted with your bot at least once
+
+**Note:** If you don't set this variable, it will default to user ID `1659457166`. To disable mentions entirely, set it to an empty string:
+```env
+TELEGRAM_MENTION_USER_IDS=
+```
 
 ## Step 4: Test the Integration
 
@@ -298,6 +324,7 @@ Here's what an order notification looks like:
 
 ```
 🎉 NEW ORDER RECEIVED!
+📢 User1 User2 - New order alert!
 
 ━━━━━━━━━━━━━━━━━━━━
 📋 Order Details:

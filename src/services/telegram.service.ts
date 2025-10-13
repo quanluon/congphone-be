@@ -147,9 +147,13 @@ export class TelegramService {
       ? `\n\n🔗 <a href="${EnvVariables.DASHBOARD_URL}/orders/${order._id}">View in Dashboard</a>`
       : "";
 
+    // User mentions for notification
+    const userMentions = this.formatUserMentions();
+
     // Build the complete message
     const message = `
 🎉 <b>NEW ORDER RECEIVED!</b>
+${userMentions ? `${userMentions}` : ""}
 
 ━━━━━━━━━━━━━━━━━━━━
 📋 <b>Order Details:</b>
@@ -242,6 +246,36 @@ ${shippingInfo}${notesInfo}${dashboardLink}
       refunded: "↩️",
     };
     return emojiMap[status] || "💳";
+  }
+
+  /**
+   * Format user mentions from comma-separated user IDs
+   */
+  private formatUserMentions(): string {
+    const userIdsString = EnvVariables.TELEGRAM_MENTION_USER_IDS;
+    
+    if (!userIdsString || userIdsString.trim() === "") {
+      return "";
+    }
+
+    // Split by comma and trim whitespace
+    const userIds = userIdsString
+      .split(",")
+      .map(id => id.trim())
+      .filter(id => id !== "");
+
+    if (userIds.length === 0) {
+      return "";
+    }
+
+    // Create mentions for each user
+    const mentions = userIds
+      .map((userId, index) => {
+        return `<a href="tg://user?id=${userId}">User${index + 1}</a>`;
+      })
+      .join(" ");
+
+    return `📢 ${mentions} - New order alert!`;
   }
 
   /**
