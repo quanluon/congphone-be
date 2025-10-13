@@ -18,7 +18,7 @@ const productVariantSchema = Joi.object({
     Joi.object({
       name: Joi.string().required().trim().min(1).max(100),
       value: Joi.string().required().trim().min(1).max(200),
-      unit: Joi.string().trim().max(20).optional(),
+      unit: Joi.string().trim().max(20).optional().allow(""),
       category: Joi.string().trim().max(50).optional()
     })
   ).optional(),
