@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { orderService } from '../../services/order.service';
+import { telegramService } from '../../services/telegram.service';
 import { ApiResponse, ApiError } from '../../utils/ApiResponse';
 import logger from '../../utils/logger';
 
@@ -19,6 +20,11 @@ export class OrderController {
         orderId: order._id,
         customerPhone: order.customer.phone,
         totalAmount: order.totalAmount
+      });
+
+      // Send Telegram notification (non-blocking)
+      telegramService.sendOrderNotification(order).catch((error) => {
+        logger.error('Failed to send Telegram notification:', error);
       });
 
       res.status(201).json(ApiResponse.success(order, 'Order created successfully').build());
