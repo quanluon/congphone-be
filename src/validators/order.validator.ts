@@ -19,9 +19,9 @@ const shippingAddressSchema = Joi.object({
   fullName: Joi.string().required().trim().min(2).max(100),
   phone: Joi.string().required(),
   address: Joi.string().required().trim().min(5).max(200),
-  city: Joi.string().required().trim().min(2).max(50),
-  district: Joi.string().required().trim().min(2).max(50),
-  ward: Joi.string().required().trim().min(2).max(50),
+  city: Joi.string().optional().trim().min(2).max(50).allow(""),
+  district: Joi.string().optional().trim().min(2).max(50).allow(""),
+  ward: Joi.string().optional().trim().min(2).max(50).allow(""),
   postalCode: Joi.string().optional().trim().max(10).allow("")
 });
 
