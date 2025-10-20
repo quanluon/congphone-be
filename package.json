@@ -13,7 +13,8 @@
     "dev:hot": "NODE_OPTIONS='--max-old-space-size=1024' serverless offline --reloadHandler",
     "dev:watch": "nodemon --exec \"npm run dev\" --watch src --ext ts,js,json",
     "dev:ts": "ts-node-dev --respawn --transpile-only --clear src/handler.ts",
-    "deploy": "yarn build && serverless deploy --force",
+    "deploy": "yarn deploy:ecr && serverless deploy --force",
+    "deploy:serverless": "serverless deploy --force",
     "build": "yarn build:esbuild",
     "build:tsc": "tsc && tsc-alias",
     "build:esbuild": "node esbuild.config.js",
@@ -26,7 +27,12 @@
     "clean": "rm -rf .build .serverless node_modules/.cache dist",
     "seed": "ts-node src/scripts/seedData.ts",
     "seed:admin": "ts-node src/scripts/seedAdmin.ts",
-    "seed:products": "ts-node src/scripts/seedProducts.ts"
+    "seed:products": "ts-node src/scripts/seedProducts.ts",
+    "docker:build": "docker build --platform linux/amd64 -t cong-phone-backend .",
+    "docker:run": "docker run --platform linux/amd64 -p 3000:3000 --env-file .env cong-phone-backend",
+    "docker:test": "yarn docker:build && yarn docker:run",
+    "deploy:ecr": "bash scripts/deploy-ecr.sh",
+    "deploy:ecr:tag": "bash scripts/deploy-ecr.sh"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.400.0",

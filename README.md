@@ -215,16 +215,49 @@ NODE_ENV=development
 
 ## Deployment
 
-### Deploy to AWS Lambda
+This backend uses Docker containers deployed to AWS Lambda via Amazon ECR (Elastic Container Registry).
+
+### Quick Start
 
 ```bash
-npm run deploy
+# One-command deployment
+yarn deploy
 ```
 
-### Local Testing
+For detailed deployment instructions, see:
+- **[Quick Start Guide](./DEPLOYMENT_QUICKSTART.md)** - Fast deployment reference
+- **[Complete ECR Deployment Guide](./DEPLOYMENT_ECR.md)** - Detailed documentation
+
+### Prerequisites
+
+- Docker Desktop (running)
+- AWS CLI configured
+- Node.js 20+ and Yarn
+- `.env` file with required variables
+
+### Deployment Commands
 
 ```bash
-npm run dev
+# Complete deployment (ECR + Lambda)
+yarn deploy
+
+# Step-by-step deployment
+yarn deploy:ecr              # Build and push to ECR
+yarn deploy:serverless       # Deploy to Lambda
+
+# Local Docker testing
+yarn docker:build            # Build image
+yarn docker:run              # Run container locally
+yarn docker:test             # Build and run locally
+
+# View logs
+serverless logs -f api --stage dev --tail
+```
+
+### Local Development
+
+```bash
+yarn dev
 ```
 
 The API will be available at `http://localhost:3001`

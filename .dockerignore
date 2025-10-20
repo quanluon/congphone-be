@@ -1,0 +1,66 @@
+# Dependencies
+node_modules/
+npm-debug.log
+yarn-error.log
+package-lock.json
+
+# Development files (keep what's needed for build)
+nodemon.json
+
+# Build artifacts
+dist/bundle-analysis.html
+dist/handler.js.map
+dist/handler.js.meta.json
+.build/
+.serverless/
+
+# Documentation
+*.md
+API_DOCUMENTATION.md
+BUILD_OPTIMIZATION.md
+CONSTANTS_ENUMS.md
+TELEGRAM_MENTIONS.md
+TELEGRAM_SETUP.md
+README.md
+
+# Tests
+tests/
+__tests__/
+*.test.js
+*.test.ts
+*.spec.js
+*.spec.ts
+jest.config.js
+
+# Scripts
+scripts/
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Serverless
+serverless.yml
+.serverless/
+
+# Docker
+Dockerfile
+.dockerignore
+

@@ -40,7 +40,7 @@ provider:
 
 functions:
   api:
-    handler: dist/handler.handler
+    image: 018134828672.dkr.ecr.ap-southeast-1.amazonaws.com/mobile/be:latest
     timeout: 29
     events:
       - http:
