@@ -1,16 +1,17 @@
 import mongoose from 'mongoose';
 import connectToDatabase from '../config/database';
 import { authService } from '../services/auth.service';
+import logger from '../utils/logger';
 
 async function seedAdmin() {
   try {
     await connectToDatabase();
-    console.log('Connected to database');
+    logger.info('Connected to database');
 
     // Check if admin already exists
     const existingAdmin = await authService.getUserByEmail('admin@congphone.com');
     if (existingAdmin) {
-      console.log('Admin user already exists:', existingAdmin.email);
+      logger.info({ email: existingAdmin.email }, 'Admin user already exists');
       return;
     }
 
@@ -23,21 +24,21 @@ async function seedAdmin() {
       userType: 'admin',
     });
 
-    console.log('Admin user created successfully:', {
+    logger.info({
       id: adminUser._id,
       email: adminUser.email,
       type: adminUser.type,
-    });
+    }, 'Admin user created successfully');
 
-    console.log('Admin credentials:');
-    console.log('Email: admin@congphone.com');
-    console.log('Password: Admin123!');
+    logger.info('Admin credentials:');
+    logger.info('Email: admin@congphone.com');
+    logger.info('Password: Admin123!');
 
   } catch (error) {
-    console.error('Error seeding admin user:', error);
+    logger.error({ err: error }, 'Error seeding admin user');
   } finally {
     await mongoose.connection.close();
-    console.log('Database connection closed');
+    logger.info('Database connection closed');
   }
 }
 

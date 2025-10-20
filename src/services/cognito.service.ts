@@ -15,6 +15,7 @@ import {
 } from '@aws-sdk/client-cognito-identity-provider';
 import { EnvVariables } from '../config/env';
 import { ApiError } from '../utils/ApiResponse';
+import logger from '../utils/logger';
 
 export interface CognitoTokens {
   accessToken: string;
@@ -140,7 +141,7 @@ export class CognitoService {
         status: 'CONFIRMED',
       };
     } catch (error: any) {
-      console.error('Cognito registration error:', error);
+      logger.error({ err: error, email: data.email }, 'Cognito registration error');
       
       if (error.name === 'UsernameExistsException') {
         throw new ApiError(409, 'User already exists', null, 'userExists');
@@ -245,7 +246,7 @@ export class CognitoService {
         tokens,
       };
     } catch (error: any) {
-      console.error('Cognito login error:', error);
+      logger.error({ err: error, email }, 'Cognito login error');
       
       if (error instanceof ApiError) {
         throw error;
@@ -576,7 +577,7 @@ export class CognitoService {
         },
       };
     } catch (error: any) {
-      console.error('Social login error:', error);
+      logger.error({ err: error, provider: data.provider }, 'Social login error');
       
       if (error instanceof ApiError) {
         throw error;

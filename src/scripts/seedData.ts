@@ -8,17 +8,18 @@ import connectToDatabase from '../config/database';
 import { Brand } from '../models/brand.model';
 import { Category } from '../models/category.model';
 import { Product, ProductType, ProductStatus } from '../models/product.model';
+import logger from '../utils/logger';
 
 async function seedData() {
   try {
     await connectToDatabase();
-    console.log('Connected to database');
+    logger.info('Connected to database');
 
     // Clear existing data
     await Brand.deleteMany({});
     await Category.deleteMany({});
     await Product.deleteMany({});
-    console.log('Cleared existing data');
+    logger.info('Cleared existing data');
 
     // Create brands
     const brands = await Brand.insertMany([
@@ -35,7 +36,7 @@ async function seedData() {
         website: 'https://samsung.com'
       }
     ]);
-    console.log('Created brands:', brands.length);
+    logger.info({ count: brands.length }, 'Created brands');
 
     // Create categories
     const categories = await Category.insertMany([
@@ -60,7 +61,7 @@ async function seedData() {
         description: 'Supplementary devices and components'
       }
     ]);
-    console.log('Created categories:', categories.length);
+    logger.info({ count: categories.length }, 'Created categories');
 
     // Create products
     const products = await Product.insertMany([
@@ -154,14 +155,14 @@ async function seedData() {
         ]
       }
     ]);
-    console.log('Created products:', products.length);
+    logger.info({ count: products.length }, 'Created products');
 
-    console.log('Data seeding completed successfully!');
+    logger.info('Data seeding completed successfully!');
   } catch (error) {
-    console.error('Error seeding data:', error);
+    logger.error({ err: error }, 'Error seeding data');
   } finally {
     await mongoose.connection.close();
-    console.log('Database connection closed');
+    logger.info('Database connection closed');
   }
 }
 

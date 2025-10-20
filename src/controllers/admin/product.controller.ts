@@ -4,6 +4,7 @@ import { ProductService } from "../../services/product.service";
 import { S3Service } from "../../services/s3.service";
 import { ApiError, ApiResponse } from "../../utils/ApiResponse";
 import { paginate } from "../../utils/pagination";
+import logger from "../../utils/logger";
 
 export class AdminProductController {
   private productService = new ProductService();
@@ -22,7 +23,7 @@ export class AdminProductController {
         );
         processedData.images = movedImages.map(img => img.publicUrl);
       } catch (error) {
-        console.error('Error moving product images:', error);
+        logger.error({ err: error }, 'Error moving product images');
         throw new ApiError(500, 'Failed to process product images', null, 'imageProcessingError');
       }
     }
@@ -39,7 +40,7 @@ export class AdminProductController {
             );
             variant.images = movedImages.map(img => img.publicUrl);
           } catch (error) {
-            console.error(`Error moving variant ${i} images:`, error);
+            logger.error({ err: error, variantIndex: i }, `Error moving variant ${i} images`);
             throw new ApiError(500, `Failed to process variant ${i + 1} images`, null, 'variantImageProcessingError');
           }
         }

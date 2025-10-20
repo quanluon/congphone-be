@@ -153,6 +153,7 @@ When creating new scripts:
 ```typescript
 import mongoose from "mongoose";
 import { EnvVariables } from "../config/env";
+import logger from "../utils/logger";
 
 async function myScript() {
   try {
@@ -163,9 +164,9 @@ async function myScript() {
     
     // Your script logic here
     
-    console.log("✅ Script completed successfully");
+    logger.info("✅ Script completed successfully");
   } catch (error) {
-    console.error("❌ Error:", error);
+    logger.error({ err: error }, "❌ Error");
   } finally {
     await mongoose.connection.close();
   }

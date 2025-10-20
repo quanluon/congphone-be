@@ -8,25 +8,26 @@ import connectToDatabase from '../config/database';
 import { Product, ProductType, ProductStatus } from '../models/product.model';
 import { Brand } from '../models/brand.model';
 import { Category } from '../models/category.model';
+import logger from '../utils/logger';
 
 async function seedProducts() {
   try {
     // Debug environment variables
-    console.log('Environment variables:');
-    console.log('MONGODB_URI:', process.env.MONGODB_URI ? 'Set' : 'Not set');
-    console.log('MONGODB_NAME:', process.env.MONGODB_NAME ? 'Set' : 'Not set');
+    logger.info('Environment variables:');
+    logger.info(`MONGODB_URI: ${process.env.MONGODB_URI ? 'Set' : 'Not set'}`);
+    logger.info(`MONGODB_NAME: ${process.env.MONGODB_NAME ? 'Set' : 'Not set'}`);
     
     await connectToDatabase();
-    console.log('Connected to database');
+    logger.info('Connected to database');
 
     // Clear existing products
     await Product.deleteMany({});
-    console.log('Cleared existing products');
+    logger.info('Cleared existing products');
 
     // Get Apple brand
     const appleBrand = await Brand.findOne({ name: 'Apple' });
     if (!appleBrand) {
-      console.log('Apple brand not found. Please run seed:data first to create brands and categories.');
+      logger.warn('Apple brand not found. Please run seed:data first to create brands and categories.');
       return;
     }
 
@@ -38,7 +39,7 @@ async function seedProducts() {
     const accessoriesCategory = await Category.findOne({ name: 'Accessories' });
 
     if (!smartphoneCategory || !tabletCategory || !laptopCategory || !watchCategory || !accessoriesCategory) {
-      console.log('Categories not found. Please run seed:data first to create categories.');
+      logger.warn('Categories not found. Please run seed:data first to create categories.');
       return;
     }
 
@@ -586,18 +587,18 @@ async function seedProducts() {
 
     // Insert products
     const createdProducts = await Product.insertMany(products);
-    console.log(`Created ${createdProducts.length} products successfully`);
+    logger.info({ count: createdProducts.length }, 'Created products successfully');
 
     // Log created products
     createdProducts.forEach(product => {
-      console.log(`- ${product.name} (${product.variants.length} variants)`);
+      logger.info(`- ${product.name} (${product.variants.length} variants)`);
     });
 
   } catch (error) {
-    console.error('Error seeding products:', error);
+    logger.error({ err: error }, 'Error seeding products');
   } finally {
     await mongoose.connection.close();
-    console.log('Database connection closed');
+    logger.info('Database connection closed');
   }
 }
 
