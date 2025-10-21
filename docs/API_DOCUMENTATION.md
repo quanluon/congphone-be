@@ -883,22 +883,6 @@ Get all new products.
 }
 ```
 
-### Search Products
-
-**GET** `/api/products/search`
-
-Search products by name, description, or tags.
-
-**Query Parameters:**
-- `q` (required): Search query
-- `page` (optional): Page number (default: 1)
-- `limit` (optional): Items per page (default: 10)
-
-**Example:**
-```
-GET /api/products/search?q=iphone&page=1&limit=10
-```
-
 **Response:**
 ```json
 {

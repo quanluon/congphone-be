@@ -6,7 +6,6 @@ const productController = new ProductController();
 
 // Public product routes (no authentication required)
 router.get("/", productController.getProducts);
-router.get("/search", productController.searchProducts);
 router.get("/featured", productController.getFeaturedProducts);
 router.get("/new", productController.getNewProducts);
 router.get("/by-category/:categoryId", productController.getProductsByCategory);

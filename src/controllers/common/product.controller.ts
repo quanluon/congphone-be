@@ -61,63 +61,6 @@ export class ProductController {
     }
   }
 
-  // Search products
-  async searchProducts(req: Request, res: Response, next: NextFunction) {
-    try {
-      const {
-        page = 1,
-        limit = 10,
-        sort = "createdAt",
-        order = "desc",
-        category,
-        brand,
-        productType,
-        minPrice,
-        maxPrice,
-        search,
-      } = req.query;
-
-      const filter: any = {
-        status: ProductStatus.ACTIVE,
-      };
-
-      // Apply additional filters
-      if (category) filter.category = category;
-      if (brand) filter.brand = brand;
-      if (productType) filter.productType = productType;
-      if (search) filter.$text = { $search: search as string };
-      // Price range filter
-      if (minPrice || maxPrice) {
-        filter.basePrice = {};
-        if (minPrice) filter.basePrice.$gte = Number(minPrice);
-        if (maxPrice) filter.basePrice.$lte = Number(maxPrice);
-      }
-
-      const sortObj: any = {};
-      if (sort === "relevance") {
-        sortObj.score = { $meta: "textScore" };
-      } else {
-        sortObj[sort as string] = order === "desc" ? -1 : 1;
-      }
-
-      const result = await paginate(Product, {
-        page: Number(page),
-        limit: Number(limit),
-        filter,
-        sort: sortObj,
-        select: "-description", // Exclude description field from response for better performance
-        populate: [
-          { path: "category", select: "name slug" },
-          { path: "brand", select: "name slug logo" },
-        ],
-      });
-
-      res.json(ApiResponse.success(result).build());
-    } catch (error) {
-      next(error);
-    }
-  }
-
   // Get featured products
   async getFeaturedProducts(req: Request, res: Response, next: NextFunction) {
     try {

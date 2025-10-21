@@ -124,7 +124,6 @@ src/
 - `GET /api/products` - Get all products with filtering
 - `GET /api/products/featured` - Get featured products
 - `GET /api/products/new` - Get new products
-- `GET /api/products/search` - Search products
 - `GET /api/products/:id` - Get product by ID
 - `GET /api/products/slug/:slug` - Get product by slug
 
