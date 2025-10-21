@@ -130,6 +130,11 @@ const productVariantSchema = new mongoose.Schema<IProductVariant>(
     ],
     attributes: [
       {
+        type: {
+          type: String,
+          enum: ProductAttributeType,
+          default: ProductAttributeType.CUSTOM,
+        },
         name: {
           type: String,
           required: true,
