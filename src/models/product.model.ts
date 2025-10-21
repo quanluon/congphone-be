@@ -17,6 +17,11 @@ export enum ProductType {
   ACCESSORIES = "accessories",
 }
 
+export enum ProductAttributeType {
+  CUSTOM = 'custom',
+  GUARANTEE = 'guarantee'
+}
+
 export interface IProductVariant {
   _id?: mongoose.Types.ObjectId;
   name: string; // e.g., "iPhone 14 Plus 128GB Blue"
@@ -37,6 +42,7 @@ export interface IProductVariant {
 }
 
 export interface IProductAttribute {
+  type: ProductAttributeType
   name: string;
   value: string;
   unit?: string;
@@ -232,6 +238,11 @@ const productSchema = new mongoose.Schema<IProduct>(
           type: String,
           trim: true,
         },
+        type: {
+          type: String,
+          enum: ProductAttributeType,
+          default: ProductAttributeType.CUSTOM,
+        }
       },
     ],
     status: {

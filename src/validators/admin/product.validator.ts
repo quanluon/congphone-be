@@ -1,5 +1,5 @@
 import Joi from 'joi';
-import { ProductStatus, ProductType } from '../../models/product.model';
+import { ProductAttributeType, ProductStatus, ProductType } from '../../models/product.model';
 
 // Product variant schema
 const productVariantSchema = Joi.object({
@@ -30,7 +30,8 @@ const productAttributeSchema = Joi.object({
   name: Joi.string().required().trim().min(1).max(100),
   value: Joi.string().required().trim().min(1).max(200),
   unit: Joi.string().trim().max(20).optional().allow(""),
-  category: Joi.string().trim().max(50).optional()
+  category: Joi.string().trim().max(50).optional(),
+  type: Joi.string().valid(...Object.values(ProductAttributeType)).optional().default(ProductAttributeType.CUSTOM).allow("")
 });
 
 // Base product schema
