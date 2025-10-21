@@ -55,7 +55,9 @@ export class ProductService {
     const [products, total] = await Promise.all([
       Product.find(
         query,
-        {},
+        {
+          description: 0,
+        },
         {
           strictQuery: true,
           sort: {
