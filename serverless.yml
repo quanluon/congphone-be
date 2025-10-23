@@ -38,18 +38,179 @@ provider:
             - cognito-idp:AdminUpdateUserAttributes
           Resource: "*"
 
+# Lambda Layers
+layers:
+  common:
+    path: layers/common
+    name: ${self:provider.stage}-common-layer
+    description: Common layer with models, services, config, utils, middleware, and validators
+    compatibleRuntimes:
+      - nodejs20.x
+    retain: false
+
 functions:
-  api:
-    image: 018134828672.dkr.ecr.ap-southeast-1.amazonaws.com/mobile/be:latest
-    timeout: 29
+  # ==================== AUTH FUNCTIONS ====================
+  auth:
+    handler: dist/functions/auth.handler
+    description: Authentication and user management endpoints
+    layers:
+      - !Ref CommonLambdaLayer
     events:
       - http:
-          path: /{proxy+}
+          path: /auth/{proxy+}
           method: ANY
           cors: true
       - http:
-          path: /
+          path: /auth
           method: ANY
+          cors: true
+
+  # ==================== ADMIN FUNCTIONS ====================
+  adminProducts:
+    handler: dist/functions/admin-products.handler
+    description: Admin product management endpoints
+    layers:
+      - !Ref CommonLambdaLayer
+    events:
+      - http:
+          path: /admin/products/{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /admin/products
+          method: ANY
+          cors: true
+
+  adminBrands:
+    handler: dist/functions/admin-brands.handler
+    description: Admin brand management endpoints
+    layers:
+      - !Ref CommonLambdaLayer
+    events:
+      - http:
+          path: /admin/brands/{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /admin/brands
+          method: ANY
+          cors: true
+
+  adminCategories:
+    handler: dist/functions/admin-categories.handler
+    description: Admin category management endpoints
+    layers:
+      - !Ref CommonLambdaLayer
+    events:
+      - http:
+          path: /admin/categories/{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /admin/categories
+          method: ANY
+          cors: true
+
+  adminOrders:
+    handler: dist/functions/admin-orders.handler
+    description: Admin order management endpoints
+    layers:
+      - !Ref CommonLambdaLayer
+    events:
+      - http:
+          path: /admin/orders/{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /admin/orders
+          method: ANY
+          cors: true
+
+  # ==================== PUBLIC/COMMON FUNCTIONS ====================
+  publicProducts:
+    handler: dist/functions/public-products.handler
+    description: Public product browsing endpoints
+    layers:
+      - !Ref CommonLambdaLayer
+    events:
+      - http:
+          path: /api/products/{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /api/products
+          method: ANY
+          cors: true
+
+  publicBrands:
+    handler: dist/functions/public-brands.handler
+    description: Public brand browsing endpoints
+    layers:
+      - !Ref CommonLambdaLayer
+    events:
+      - http:
+          path: /api/brands/{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /api/brands
+          method: ANY
+          cors: true
+
+  publicCategories:
+    handler: dist/functions/public-categories.handler
+    description: Public category browsing endpoints
+    layers:
+      - !Ref CommonLambdaLayer
+    events:
+      - http:
+          path: /api/categories/{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /api/categories
+          method: ANY
+          cors: true
+
+  publicOrders:
+    handler: dist/functions/public-orders.handler
+    description: Public order creation and user order endpoints
+    layers:
+      - !Ref CommonLambdaLayer
+    events:
+      - http:
+          path: /api/orders/{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /api/orders
+          method: ANY
+          cors: true
+
+  # ==================== FILE FUNCTIONS ====================
+  files:
+    handler: dist/functions/files.handler
+    description: File upload and management endpoints
+    layers:
+      - !Ref CommonLambdaLayer
+    events:
+      - http:
+          path: /files/{proxy+}
+          method: ANY
+          cors: true
+      - http:
+          path: /files
+          method: ANY
+          cors: true
+
+  # ==================== HEALTH CHECK ====================
+  health:
+    handler: dist/functions/health.handler
+    description: Health check endpoint
+    events:
+      - http:
+          path: /health
+          method: GET
           cors: true
 
 plugins:
@@ -68,7 +229,10 @@ custom:
 
 package:
   patterns:
-    # Exclude development files
+    # Include only necessary files
+    - 'dist/functions/**'
+    - 'layers/**'
+    # Exclude everything else
     - '!node_modules/.cache/**'
     - '!node_modules/@types/**'
     - '!node_modules/typescript/**'
@@ -100,30 +264,3 @@ package:
     - '!tsconfig*.json'
     - '!nodemon.json'
     - '!jest.config.js'
-    - '!dist/**'
-    # Include only necessary files
-    - 'dist/handler.js'
-    - 'dist/handler.js.map'
-    - 'node_modules/**'
-    # Exclude large unnecessary node_modules
-    - '!node_modules/**/test/**'
-    - '!node_modules/**/tests/**'
-    - '!node_modules/**/__tests__/**'
-    - '!node_modules/**/*.test.js'
-    - '!node_modules/**/*.test.ts'
-    - '!node_modules/**/*.spec.js'
-    - '!node_modules/**/*.spec.ts'
-    - '!node_modules/**/docs/**'
-    - '!node_modules/**/doc/**'
-    - '!node_modules/**/examples/**'
-    - '!node_modules/**/example/**'
-    - '!node_modules/**/benchmark/**'
-    - '!node_modules/**/benchmarks/**'
-    - '!node_modules/**/*.md'
-    - '!node_modules/**/*.txt'
-    - '!node_modules/**/*.yml'
-    - '!node_modules/**/*.yaml'
-    - '!node_modules/**/LICENSE*'
-    - '!node_modules/**/CHANGELOG*'
-    - '!node_modules/**/HISTORY*'
-    - '!node_modules/**/README*'

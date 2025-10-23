@@ -1,4 +1,4 @@
-import { Category, ICategory } from "../models/category.model";
+import { Category, ICategory } from "../../layers/common/nodejs/models/category.model";
 
 export class CategoryService {
   async createCategory(categoryData: Partial<ICategory>): Promise<ICategory> {

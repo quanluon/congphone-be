@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { Product, ProductStatus } from "../../models/product.model";
+import { Product, ProductStatus } from "../../../layers/common/nodejs/models/product.model";
 import { ApiResponse, ApiError } from "../../utils/ApiResponse";
 import { paginate } from "../../utils/pagination";
 

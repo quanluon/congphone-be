@@ -1,5 +1,5 @@
 import { Types } from "mongoose";
-import { IProduct, Product, ProductStatus } from "../models/product.model";
+import { IProduct, Product, ProductStatus } from "../../layers/common/nodejs/models/product.model";
 
 export class ProductService {
   async createProduct(productData: Partial<IProduct>): Promise<IProduct> {

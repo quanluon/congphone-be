@@ -1,6 +1,6 @@
 import { EnvVariables } from "../config/env";
 import logger from "../utils/logger";
-import { IOrder } from "../models/order.model";
+import { IOrder } from "../../layers/common/nodejs/models/order.model";
 
 interface TelegramMessageOptions {
   parse_mode?: "HTML" | "Markdown" | "MarkdownV2";

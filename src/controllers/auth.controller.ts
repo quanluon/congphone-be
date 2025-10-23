@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import { ApiResponse, ApiError } from "../utils/ApiResponse";
 import { authService } from "../services/auth.service";
 import { getCurrentUser } from "../middleware/auth";
-import { UserType } from "../models/user.model";
+import { UserType } from "../../layers/common/nodejs/models/user.model";
 import { S3Service } from "@/services/s3.service";
 
 export class AuthController {

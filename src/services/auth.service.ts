@@ -1,4 +1,4 @@
-import { User, IUser, UserType, UserStatus } from '../models/user.model';
+import { User, IUser, UserType, UserStatus } from '../../layers/common/nodejs/models/user.model';
 import { cognitoService, CognitoUser, LoginResponse, RegisterRequest, SocialLoginRequest } from './cognito.service';
 import { ApiError } from '../utils/ApiResponse';
 import { Document } from 'mongoose';

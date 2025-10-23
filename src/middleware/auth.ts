@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import { verifyCognitoToken } from "../utils/jwt";
 import { authService } from "../services/auth.service";
 import { ApiError } from "../utils/ApiResponse";
-import { IUser, UserType } from "../models/user.model";
+import { IUser, UserType } from "../../layers/common/nodejs/models/user.model";
 
 // Extend Express Request interface
 declare global {

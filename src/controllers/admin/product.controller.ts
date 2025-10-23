@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { IProductVariant, Product, ProductStatus } from "../../models/product.model";
+import { IProductVariant, Product, ProductStatus } from "../../../layers/common/nodejs/models/product.model";
 import { ProductService } from "../../services/product.service";
 import { S3Service } from "../../services/s3.service";
 import { ApiError, ApiResponse } from "../../utils/ApiResponse";

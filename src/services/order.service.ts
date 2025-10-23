@@ -1,5 +1,5 @@
-import { Order, IOrder, IOrderItem } from '../models/order.model';
-import { Product } from '../models/product.model';
+import { Order, IOrder, IOrderItem } from '../../layers/common/nodejs/models/order.model';
+import { Product } from '../../layers/common/nodejs/models/product.model';
 import { generateOrderNumber } from '../utils/order.utils';
 import { OrderStatus, PaymentStatus, PaymentMethod } from '../constants/common';
 

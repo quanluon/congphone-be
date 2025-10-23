@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
-import { Brand } from "../../models/brand.model";
-import { Product } from "../../models/product.model";
+import { Brand } from "../../../layers/common/nodejs/models/brand.model";
+import { Product } from "../../../layers/common/nodejs/models/product.model";
 import { ApiResponse, ApiError } from "../../utils/ApiResponse";
 import { paginate } from "../../utils/pagination";
 

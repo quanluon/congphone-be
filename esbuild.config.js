@@ -4,13 +4,29 @@ const fs = require('fs');
 
 const isProduction = process.env.NODE_ENV === 'production';
 
+// Get all function files
+const functionsDir = path.join(__dirname, 'functions');
+const functionFiles = fs.readdirSync(functionsDir)
+  .filter(file => file.endsWith('.ts'))
+  .map(file => path.join('functions', file));
+
+// Create entry points object
+const entryPoints = functionFiles.reduce((acc, file) => {
+  const name = path.basename(file, '.ts');
+  acc[`functions/${name}`] = file;
+  return acc;
+}, {});
+
+console.log('📦 Building functions:', Object.keys(entryPoints).map(k => path.basename(k)));
+
 const config = {
-  entryPoints: ['src/handler.ts'],
+  entryPoints,
   bundle: true,
   platform: 'node',
   target: 'node20',
   format: 'cjs',
-  outfile: 'dist/handler.js',
+  outdir: 'dist',
+  outExtension: { '.js': '.js' },
   external: [
     // AWS SDK is provided by Lambda runtime
     'aws-sdk',
@@ -26,7 +42,9 @@ const config = {
     'dotenv',
     'serverless-http',
     'express-validator',
-    'jose'
+    'jose',
+    'pino',
+    'pino-pretty'
   ],
   minify: isProduction,
   sourcemap: !isProduction,
@@ -47,33 +65,37 @@ const config = {
 // Build function
 async function build() {
   try {
+    // Clean dist folder first
+    if (fs.existsSync('dist/functions')) {
+      fs.rmSync('dist/functions', { recursive: true, force: true });
+    }
+    
     const result = await esbuild.build(config);
     
     if (result.metafile) {
-      // Write metadata file for esbuild-visualizer
-      fs.writeFileSync('dist/handler.js.meta.json', JSON.stringify(result.metafile, null, 2));
+      // Write metadata file for analysis
+      fs.writeFileSync('dist/build-meta.json', JSON.stringify(result.metafile, null, 2));
       
       console.log('\n📊 Bundle Analysis:');
-      console.log('Entry point size:', (result.metafile.outputs['dist/handler.js']?.bytes || 0) / 1024, 'KB');
       
-      // Show largest dependencies
-      const outputs = Object.entries(result.metafile.outputs);
-      const largestFiles = outputs
-        .filter(([file]) => file.includes('node_modules'))
-        .sort((a, b) => b[1].bytes - a[1].bytes)
-        .slice(0, 10);
+      // Calculate total size
+      let totalSize = 0;
+      const outputs = Object.entries(result.metafile.outputs)
+        .filter(([file]) => file.endsWith('.js'))
+        .sort((a, b) => b[1].bytes - a[1].bytes);
       
-      if (largestFiles.length > 0) {
-        console.log('\n🔍 Largest dependencies:');
-        largestFiles.forEach(([file, meta]) => {
-          const size = (meta.bytes / 1024).toFixed(2);
-          const name = file.split('node_modules/')[1]?.split('/')[0] || 'unknown';
-          console.log(`  ${name}: ${size} KB`);
-        });
-      }
+      outputs.forEach(([file, meta]) => {
+        totalSize += meta.bytes;
+        const size = (meta.bytes / 1024).toFixed(2);
+        const name = path.basename(file);
+        console.log(`  ${name}: ${size} KB`);
+      });
+      
+      console.log(`\n📦 Total bundle size: ${(totalSize / 1024).toFixed(2)} KB`);
+      console.log(`📄 Functions built: ${outputs.length}`);
     }
     
-    console.log('✅ Build completed successfully');
+    console.log('\n✅ Build completed successfully');
   } catch (error) {
     console.error('❌ Build failed:', error);
     process.exit(1);

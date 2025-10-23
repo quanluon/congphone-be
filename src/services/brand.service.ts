@@ -1,4 +1,4 @@
-import { Brand, IBrand } from '../models/brand.model';
+import { Brand, IBrand } from '../../layers/common/nodejs/models/brand.model';
 import { ApiError } from '../utils/ApiResponse';
 
 export class BrandService {
