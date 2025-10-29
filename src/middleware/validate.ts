@@ -3,6 +3,8 @@ import { Schema, ValidationOptions } from "joi";
 import { ApiError } from "../utils/ApiResponse";
 import logger from "../utils/logger";
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 type ValidationType = 'body' | 'query' | 'params';
 type ValidationSchema = {
   [key in ValidationType]?: Schema;
@@ -32,11 +34,14 @@ export const validate = (schemas: ValidationSchema) => {
             type: key,
           }));
 
-          logger.debug('Validation error:', {
-            path: req.path,
-            type: key,
-            errors: validationErrors
-          });
+          // Only log validation errors in development or for critical endpoints
+          if (!isProduction || req.path.includes('/admin/') || req.path.includes('/auth/')) {
+            logger.debug('Validation error:', {
+              path: req.path,
+              type: key,
+              errors: validationErrors
+            });
+          }
 
           throw new ApiError(400, "Validation Error", validationErrors, 'validationError');
         }

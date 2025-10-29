@@ -15,12 +15,6 @@ export class OrderController {
       }
 
       const order = await orderService.createOrder(orderData);
-      
-      logger.info(`Order created: ${order.orderNumber}`, {
-        orderId: order._id,
-        customerPhone: order.customer.phone,
-        totalAmount: order.totalAmount
-      });
 
       // Send Telegram notification (non-blocking)
       await telegramService.sendOrderNotification(order)

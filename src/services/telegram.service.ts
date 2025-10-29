@@ -2,6 +2,8 @@ import { EnvVariables } from "../config/env";
 import logger from "../utils/logger";
 import { IOrder } from "../models/order.model";
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 interface TelegramMessageOptions {
   parse_mode?: "HTML" | "Markdown" | "MarkdownV2";
   disable_web_page_preview?: boolean;
@@ -62,10 +64,6 @@ export class TelegramService {
           data.description || `Telegram API error: ${response.status}`
         );
       }
-
-      logger.info("Telegram message sent successfully", {
-        messageId: data.result?.message_id,
-      });
 
       return true;
     } catch (error: any) {
@@ -334,9 +332,12 @@ ${shippingInfo}${notesInfo}${dashboardLink}
         );
       }
 
-      logger.info("Telegram bot connection successful", {
-        botName: data.result?.username,
-      });
+      // Only log connection success in development
+      if (!isProduction) {
+        logger.info("Telegram bot connection successful", {
+          botName: data.result?.username,
+        });
+      }
 
       return true;
     } catch (error: any) {

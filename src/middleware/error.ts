@@ -4,23 +4,25 @@ import { getMessage } from "../utils/messages";
 import logger from "../utils/logger";
 import { EnvVariables } from "../config/env";
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 export const errorHandler = (
   err: Error,
   req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  // Log the error
-  logger.error(
-    JSON.stringify({
-      name: err.name,
-      message: err.message,
-      stack: err.stack,
-      path: req.path,
-      url: req.baseUrl,
-      method: req.method,
-    })
-  );
+  // Log the error with optimized structure for CloudWatch
+  const errorData = {
+    name: err.name,
+    message: err.message,
+    path: req.path,
+    method: req.method,
+    ...(isProduction ? {} : { stack: err.stack, url: req.baseUrl }),
+  };
+  
+  // Use structured logging instead of JSON.stringify
+  logger.error(errorData, `${err.name}: ${err.message} at ${req.method} ${req.path}`);
 
   if (err instanceof ApiError) {
     const language = (req.headers['accept-language'] as string)?.includes('vi') ? 'vi' : 'en';

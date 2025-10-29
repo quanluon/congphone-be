@@ -3,6 +3,8 @@ import { orderService, PaginationOptions } from '../../services/order.service';
 import { ApiError, ApiResponse } from '../../utils/ApiResponse';
 import logger from '../../utils/logger';
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 export class AdminOrderController {
   async getOrders(req: Request, res: Response, next: NextFunction) {
     try {
@@ -63,12 +65,7 @@ export class AdminOrderController {
         throw new ApiError(404, 'Order not found');
       }
 
-      logger.info(`Order updated: ${order.orderNumber}`, {
-        orderId: order._id,
-        updatedFields: Object.keys(updateData),
-        updatedBy: req.user?._id
-      });
-
+ 
       res.json(ApiResponse.success(order, 'Order updated successfully').build());
     } catch (error: any) {
       if (error instanceof ApiError) {
@@ -89,11 +86,6 @@ export class AdminOrderController {
       if (!deleted) {
         throw new ApiError(404, 'Order not found');
       }
-
-      logger.info(`Order deleted: ${id}`, {
-        orderId: id,
-        deletedBy: req.user?._id
-      });
 
       res.json(ApiResponse.success(null, 'Order deleted successfully').build());
     } catch (error: any) {
@@ -141,13 +133,6 @@ export class AdminOrderController {
 
       const successCount = results.filter(r => r.success).length;
       const failureCount = results.filter(r => !r.success).length;
-
-      logger.info(`Bulk update orders completed`, {
-        totalOrders: orderIds.length,
-        successCount,
-        failureCount,
-        updatedBy: req.user?._id
-      });
 
       res.json(ApiResponse.success({
         results,
