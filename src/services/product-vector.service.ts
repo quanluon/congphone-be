@@ -108,20 +108,20 @@ export class ProductVectorService {
         .map((variant) => {
           const variantAttributes = Array.isArray(variant.attributes)
             ? variant.attributes
-                .map((attribute) =>
-                  [
-                    attribute.category,
-                    attribute.name,
-                    attribute.value,
-                    attribute.unit,
-                    attribute.type,
-                  ]
-                    .map((item) => normalizeText(item))
-                    .filter(Boolean)
-                    .join(": "),
-                )
-                .filter(Boolean)
-                .join(", ")
+              .map((attribute) =>
+                [
+                  attribute.category,
+                  attribute.name,
+                  attribute.value,
+                  attribute.unit,
+                  attribute.type,
+                ]
+                  .map((item) => normalizeText(item))
+                  .filter(Boolean)
+                  .join(": "),
+              )
+              .filter(Boolean)
+              .join(", ")
             : "";
 
           return [
@@ -207,48 +207,48 @@ export class ProductVectorService {
   async generateVector(product: Partial<IProduct>, context: ProductVectorContext = {}) {
     try {
       const input = this.buildEmbeddingInput(product, context);
-    if (!input) {
-      throw new ApiError(
-        400,
-        "Product does not contain enough data to generate a vector.",
-        null,
-        "product_vector_input_missing",
-      );
-    }
-
-    try {
-      const extractor = await this.getExtractor();
-      const response = await extractor(input, {
-        pooling: "mean",
-        normalize: true,
-      });
-
-      if (!response?.data) {
-        throw new Error("Embedding output did not contain vector data.");
+      if (!input) {
+        throw new ApiError(
+          400,
+          "Product does not contain enough data to generate a vector.",
+          null,
+          "product_vector_input_missing",
+        );
       }
 
-      return Array.from(response.data, (value) => Number(value));
-    } catch (error: any) {
-      if (error instanceof ApiError) {
-        throw error;
-      }
+      try {
+        const extractor = await this.getExtractor();
+        const response = await extractor(input, {
+          pooling: "mean",
+          normalize: true,
+        });
 
-      throw new ApiError(
-        500,
-        "Failed to generate product vector.",
-        error?.message ?? null,
-        "product_vector_generation_failed",
-      );
-    }
+        if (!response?.data) {
+          throw new Error("Embedding output did not contain vector data.");
+        }
+
+        return Array.from(response.data, (value) => Number(value));
+      } catch (error: any) {
+        if (error instanceof ApiError) {
+          throw error;
+        }
+
+        throw new ApiError(
+          500,
+          "Failed to generate product vector.",
+          error?.message ?? null,
+          "product_vector_generation_failed",
+        );
+      }
     } catch (error) {
-     logger.error(
+      logger.error(
         {
           error,
           productId: product._id ?? null,
         },
         "Error generating product vector",
       );
-      return [-1]; 
+      return [-1];
     }
   }
 }
