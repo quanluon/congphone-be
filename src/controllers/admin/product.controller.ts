@@ -10,14 +10,11 @@ import { crawler } from "../../utils/crawler";
 import { Category } from "../../models/category.model";
 import { Brand } from "../../models/brand.model";
 import { createProductSchema } from "../../validators/admin/product.validator";
+import type { PreparedImageSource } from "../../services/s3.service";
 
 export class AdminProductController {
   private productService = new ProductService();
   private s3Service = new S3Service();
-  private lowQualityImagePattern =
-    /(thumb|thumbnail|small|swatch|icon|sprite|tiny|preview|placeholder|blur|low[\-_]?res|low[\-_]?quality)/i;
-  private highQualityImagePattern =
-    /(original|master|zoom|large|hi[\-_]?res|high[\-_]?res|retina|full[\-_]?size|gallery)/i;
 
   private logDuration(
     requestStartedAt: number,
@@ -35,87 +32,31 @@ export class AdminProductController {
     );
   }
 
-  private getImageQualityScore(imageUrl: string, index: number): number {
-    let score = Math.max(0, 100 - index);
-
-    if (this.highQualityImagePattern.test(imageUrl)) {
-      score += 40;
-    }
-
-    if (this.lowQualityImagePattern.test(imageUrl)) {
-      score -= 80;
-    }
-
-    const sizeMatches = [...imageUrl.matchAll(/(\d{2,4})[xX](\d{2,4})/g)];
-    for (const match of sizeMatches) {
-      const width = Number(match[1]);
-      const height = Number(match[2]);
-      if (!Number.isNaN(width) && !Number.isNaN(height)) {
-        score += Math.min(width, height) / 20;
+  private keepBestPreparedImages(
+    candidates: PreparedImageSource[],
+    maxCount?: number,
+  ): PreparedImageSource[] {
+    const filtered = candidates.filter((candidate, index) => {
+      if (!candidate.isLowQuality) {
+        return true;
       }
+
+      return index === 0;
+    });
+
+    if (typeof maxCount === "number") {
+      return filtered.slice(0, maxCount);
     }
 
-    try {
-      const parsedUrl = new URL(imageUrl);
-      const widthHints = ["w", "width", "wid", "imwidth"];
-      for (const key of widthHints) {
-        const rawValue = parsedUrl.searchParams.get(key);
-        const width = Number(rawValue);
-        if (!Number.isNaN(width) && width > 0) {
-          score += Math.min(width, 2000) / 20;
-        }
-      }
-    } catch {
-      // Ignore malformed URLs here and keep the string-based score only.
-    }
-
-    return score;
+    return filtered;
   }
 
-  private pickBestVariantFallbackImages(mainImages: string[], count = 1): string[] {
-    return [...mainImages]
-      .sort(
-        (left, right) =>
-          this.getImageQualityScore(right, 0) - this.getImageQualityScore(left, 0),
-      )
-      .slice(0, count);
-  }
-
-  private shouldReplaceVariantImages(variantImages: string[]): boolean {
-    if (variantImages.length === 0) {
+  private shouldUseMainImageForVariant(candidates: PreparedImageSource[]): boolean {
+    if (candidates.length === 0) {
       return true;
     }
 
-    return variantImages.every((imageUrl, index) => {
-      return this.getImageQualityScore(imageUrl, index) < 60;
-    });
-  }
-
-  private improveExtractedVariantImages(extractedData: any) {
-    const mainImages = Array.isArray(extractedData.images)
-      ? extractedData.images.filter((imageUrl: unknown): imageUrl is string => Boolean(imageUrl))
-      : [];
-
-    if (!Array.isArray(extractedData.variants) || mainImages.length === 0) {
-      return;
-    }
-
-    const fallbackImages = this.pickBestVariantFallbackImages(mainImages, 1);
-    if (fallbackImages.length === 0) {
-      return;
-    }
-
-    extractedData.variants.forEach((variant: any) => {
-      const variantImages = Array.isArray(variant.images)
-        ? variant.images.filter((imageUrl: unknown): imageUrl is string => Boolean(imageUrl))
-        : [];
-
-      if (this.shouldReplaceVariantImages(variantImages)) {
-        variant.images = [...fallbackImages];
-      } else {
-        variant.images = variantImages;
-      }
-    });
+    return candidates.every((candidate) => candidate.isLowQuality);
   }
 
   // Helper method to process uploaded files and move them to permanent storage
@@ -677,53 +618,67 @@ export class AdminProductController {
         }
       }
 
-      this.improveExtractedVariantImages(extractedData);
-
       // 5. Upload extracted images to S3 in parallel
       const uploadImagesStartedAt = Date.now();
-      const uploadTasks: Promise<void>[] = [];
+      const mainPreparedImages = Array.isArray(extractedData.images)
+        ? this.keepBestPreparedImages(
+            await this.s3Service.prepareImageSources(extractedData.images),
+          )
+        : [];
+      const fallbackMainImage = mainPreparedImages[0];
 
-      if (extractedData.images && Array.isArray(extractedData.images)) {
-        uploadTasks.push(
-          this.s3Service
-            .persistImageSources(extractedData.images, 'products')
-            .then((uploadedImages) => {
-              extractedData.images = uploadedImages;
-            }),
+      if (mainPreparedImages.length > 0) {
+        extractedData.images = await this.s3Service.persistPreparedImageSources(
+          mainPreparedImages,
+          "products",
         );
+      } else {
+        extractedData.images = [];
       }
 
       if (extractedData.variants && Array.isArray(extractedData.variants)) {
-        uploadTasks.push(
-          Promise.all(
-            extractedData.variants.map(async (variant: any) => {
-              if (!Array.isArray(variant.images) || variant.images.length === 0) {
-                variant.images = [];
-                return;
-              }
+        await Promise.all(
+          extractedData.variants.map(async (variant: any) => {
+            const variantPreparedImages = Array.isArray(variant.images)
+              ? this.keepBestPreparedImages(
+                  await this.s3Service.prepareImageSources(variant.images),
+                  1,
+                )
+              : [];
 
-              variant.images = await this.s3Service.persistImageSources(
-                variant.images,
-                'products/variants',
-              );
-            }),
-          ).then(() => undefined),
+            const selectedPreparedImages = this.shouldUseMainImageForVariant(
+              variantPreparedImages,
+            )
+              ? fallbackMainImage
+                ? [fallbackMainImage]
+                : variantPreparedImages
+              : variantPreparedImages;
+
+            if (selectedPreparedImages.length === 0) {
+              variant.images = [];
+              return;
+            }
+
+            variant.images = await this.s3Service.persistPreparedImageSources(
+              selectedPreparedImages,
+              "products/variants",
+            );
+          }),
         );
       }
 
-      if (uploadTasks.length > 0) {
-        await Promise.all(uploadTasks);
-        this.logDuration(requestStartedAt, uploadImagesStartedAt, 'uploadImagesMs', {
-          mainImageCount: extractedData.images?.length ?? 0,
-          variantImageCount: Array.isArray(extractedData.variants)
-            ? extractedData.variants.reduce(
-                (total: number, variant: any) =>
-                  total + (Array.isArray(variant.images) ? variant.images.length : 0),
-                0,
-              )
-            : 0,
-        });
-      }
+      this.logDuration(requestStartedAt, uploadImagesStartedAt, 'uploadImagesMs', {
+        mainImageCount: extractedData.images?.length ?? 0,
+        mainPreparedImageCount: mainPreparedImages.length,
+        bestMainImageQualityScore: fallbackMainImage?.qualityScore ?? null,
+        variantImageCount: Array.isArray(extractedData.variants)
+          ? extractedData.variants.reduce(
+              (total: number, variant: any) =>
+                total + (Array.isArray(variant.images) ? variant.images.length : 0),
+              0,
+            )
+          : 0,
+      });
 
       // 6. Default values and validation
       const validationStartedAt = Date.now();
