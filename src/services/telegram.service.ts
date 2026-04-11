@@ -25,8 +25,8 @@ export class TelegramService {
   private baseUrl: string;
 
   constructor() {
-    this.botToken = EnvVariables.TELEGRAM_BOT_TOKEN;
-    this.chatId = EnvVariables.TELEGRAM_CHAT_ID;
+    this.botToken = EnvVariables.TELEGRAM_BOT_TOKEN!;
+    this.chatId = EnvVariables.TELEGRAM_CHAT_ID!;
     this.baseUrl = `https://api.telegram.org/bot${this.botToken}`;
   }
 
@@ -334,9 +334,12 @@ ${shippingInfo}${notesInfo}${dashboardLink}
 
       // Only log connection success in development
       if (!isProduction) {
-        logger.info("Telegram bot connection successful", {
-          botName: data.result?.username,
-        });
+        logger.info(
+          {
+            botName: data.result?.username,
+          },
+          "Telegram bot connection successful"
+        );
       }
 
       return true;
@@ -348,4 +351,3 @@ ${shippingInfo}${notesInfo}${dashboardLink}
 }
 
 export const telegramService = new TelegramService();
-

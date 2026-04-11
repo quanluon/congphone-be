@@ -36,11 +36,14 @@ export const validate = (schemas: ValidationSchema) => {
 
           // Only log validation errors in development or for critical endpoints
           if (!isProduction || req.path.includes('/admin/') || req.path.includes('/auth/')) {
-            logger.debug('Validation error:', {
-              path: req.path,
-              type: key,
-              errors: validationErrors
-            });
+            logger.debug(
+              {
+                path: req.path,
+                type: key,
+                errors: validationErrors,
+              },
+              "Validation error"
+            );
           }
 
           throw new ApiError(400, "Validation Error", validationErrors, 'validationError');

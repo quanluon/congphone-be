@@ -22,8 +22,8 @@ async function testTelegramOrderNotification() {
     }
 
     logger.info("🔌 Connecting to MongoDB...");
-    await mongoose.connect(EnvVariables.MONGODB_URI, {
-      dbName: EnvVariables.MONGODB_NAME,
+    await mongoose.connect(EnvVariables.MONGODB_URI!, {
+      dbName: EnvVariables.MONGODB_NAME!,
     });
     logger.info("✅ Connected to MongoDB");
 
@@ -83,4 +83,3 @@ async function testTelegramOrderNotification() {
 
 // Run the test function
 testTelegramOrderNotification();
-

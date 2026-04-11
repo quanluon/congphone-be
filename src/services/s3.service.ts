@@ -16,9 +16,9 @@ export class S3Service {
 
   constructor() {
     this.s3Client = new S3Client({
-      region: EnvVariables.AWS_REGION,
+      region: EnvVariables.AWS_REGION!,
     });
-    this.bucket = EnvVariables.S3_BUCKET;
+    this.bucket = EnvVariables.S3_BUCKET!;
   }
 
   private generateUniqueFileName(originalName: string): string {
