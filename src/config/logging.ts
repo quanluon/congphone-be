@@ -12,7 +12,7 @@ export const LOGGING_CONFIG = {
     slowRequestThreshold: 1000,
     skipPaths: []
   },
-  
+
   // Development log levels - full logging for debugging
   development: {
     level: 'debug',
@@ -21,11 +21,11 @@ export const LOGGING_CONFIG = {
     slowRequestThreshold: 500,
     skipPaths: []
   },
-  
+
   // Test log levels - minimal logging
   test: {
     level: 'error',
-    requestSampling: 1.0, 
+    requestSampling: 1.0,
     errorSampling: 1.0,
     slowRequestThreshold: 2000,
     skipPaths: []
@@ -39,17 +39,17 @@ export const getLoggingConfig = () => {
 
 export const shouldLogRequest = (path: string, statusCode: number, duration: number) => {
   const config = getLoggingConfig();
-  
+
   // Skip logging for specific paths
   if (config.skipPaths.some(skipPath => path.includes(skipPath))) {
     return false;
   }
-  
+
   // Always log errors and slow requests
   if (statusCode >= 400 || duration > config.slowRequestThreshold) {
     return true;
   }
-  
+
   // Sample successful requests
   return Math.random() < config.requestSampling;
 };

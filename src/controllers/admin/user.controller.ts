@@ -31,16 +31,14 @@ export class AdminUserController {
       ]);
 
       res.json(
-        ApiResponse.success(
-          users,
-          "Users retrieved successfully",
-          {
+        ApiResponse.success(users, "Users retrieved successfully")
+          .withPagination({
             page,
             limit,
             total,
             pages: Math.ceil(total / limit)
-          }
-        ).build()
+          })
+          .build()
       );
     } catch (error) {
       next(error);

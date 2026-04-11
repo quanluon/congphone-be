@@ -26,7 +26,7 @@ export class AdminOrderController {
       };
 
       const result = await orderService.getOrders(filters, pagination as PaginationOptions);
-      
+
       res.json(ApiResponse.success(result, 'Orders retrieved successfully').build());
     } catch (error: any) {
       logger.error('Error getting orders:', error);
@@ -38,7 +38,7 @@ export class AdminOrderController {
     try {
       const { id } = req.params;
       const order = await orderService.getOrderById(id);
-      
+
       if (!order) {
         throw new ApiError(404, 'Order not found');
       }
@@ -58,14 +58,14 @@ export class AdminOrderController {
     try {
       const { id } = req.params;
       const updateData = req.body;
-      
+
       const order = await orderService.updateOrder(id, updateData);
-      
+
       if (!order) {
         throw new ApiError(404, 'Order not found');
       }
 
- 
+
       res.json(ApiResponse.success(order, 'Order updated successfully').build());
     } catch (error: any) {
       if (error instanceof ApiError) {
@@ -80,9 +80,9 @@ export class AdminOrderController {
   async deleteOrder(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      
+
       const deleted = await orderService.deleteOrder(id);
-      
+
       if (!deleted) {
         throw new ApiError(404, 'Order not found');
       }
@@ -101,7 +101,7 @@ export class AdminOrderController {
   async getOrderStats(req: Request, res: Response, next: NextFunction) {
     try {
       const stats = await orderService.getOrderStats();
-      
+
       res.json(ApiResponse.success(stats, 'Order statistics retrieved successfully').build());
     } catch (error: any) {
       logger.error('Error getting order stats:', error);
@@ -112,7 +112,7 @@ export class AdminOrderController {
   async bulkUpdateOrders(req: Request, res: Response, next: NextFunction) {
     try {
       const { orderIds, updateData } = req.body;
-      
+
       if (!Array.isArray(orderIds) || orderIds.length === 0) {
         throw new ApiError(400, 'Order IDs array is required');
       }
