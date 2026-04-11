@@ -7,6 +7,16 @@ export interface AuthUser extends IUser {
   fullName: string;
 }
 
+export interface FirebaseIdentity {
+  uid: string;
+  email?: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
+  phone?: string;
+  profileImage?: string;
+}
+
 export class AuthService {
   /**
    * Register a new user
@@ -178,6 +188,23 @@ export class AuthService {
     }
   }
 
+  async getUserByFirebaseUid(firebaseUid: string): Promise<AuthUser | null> {
+    try {
+      const user = await User.findOne({
+        firebaseUid,
+        status: { $ne: UserStatus.INACTIVE }
+      });
+
+      if (!user) {
+        return null;
+      }
+
+      return this.formatUser(user);
+    } catch (error) {
+      throw new ApiError(500, 'Failed to get user', error, 'getUserFailed');
+    }
+  }
+
   /**
    * Get user by email
    */
@@ -202,7 +229,7 @@ export class AuthService {
    * Update user profile
    */
   async updateUserProfile(
-    cognitoId: string,
+    authProviderUid: string,
     updates: {
       firstName?: string;
       lastName?: string;
@@ -211,7 +238,9 @@ export class AuthService {
     }
   ): Promise<AuthUser> {
     try {
-      const user = await User.findOne({ cognitoId });
+      const user = await User.findOne({
+        $or: [{ firebaseUid: authProviderUid }, { cognitoId: authProviderUid }],
+      });
       if (!user) {
         throw new ApiError(404, 'User not found', null, 'userNotFound');
       }
@@ -222,11 +251,13 @@ export class AuthService {
 
       // Update in Cognito if needed
       const cognitoUpdates: Record<string, string> = {};
-      if (updates.firstName) cognitoUpdates.given_name = updates.firstName;
-      if (updates.lastName) cognitoUpdates.family_name = updates.lastName;
-      if (updates.phone) cognitoUpdates.phone_number = updates.phone;
+      if (user.cognitoId) {
+        if (updates.firstName) cognitoUpdates.given_name = updates.firstName;
+        if (updates.lastName) cognitoUpdates.family_name = updates.lastName;
+        if (updates.phone) cognitoUpdates.phone_number = updates.phone;
+      }
 
-      if (Object.keys(cognitoUpdates).length > 0) {
+      if (user.cognitoId && Object.keys(cognitoUpdates).length > 0) {
         await cognitoService.updateUserAttributes(user.email, cognitoUpdates);
       }
 
@@ -236,6 +267,56 @@ export class AuthService {
         throw error;
       }
       throw new ApiError(500, 'Failed to update profile', error, 'updateProfileFailed');
+    }
+  }
+
+  async findOrCreateUserFromFirebaseIdentity(
+    identity: FirebaseIdentity
+  ): Promise<AuthUser> {
+    try {
+      const normalizedEmail = identity.email?.toLowerCase().trim();
+
+      let user =
+        (await User.findOne({
+          firebaseUid: identity.uid,
+          status: { $ne: UserStatus.INACTIVE },
+        })) ||
+        (normalizedEmail
+          ? await User.findOne({
+              email: normalizedEmail,
+              status: { $ne: UserStatus.INACTIVE },
+            })
+          : null);
+
+      if (!user) {
+        user = new User({
+          firebaseUid: identity.uid,
+          email: normalizedEmail || `${identity.uid}@firebase.local`,
+          firstName: identity.firstName,
+          lastName: identity.lastName,
+          phone: identity.phone,
+          profileImage: identity.profileImage,
+          type: UserType.CUSTOMER,
+          status: UserStatus.ACTIVE,
+          lastLoginAt: new Date(),
+        });
+
+        await user.save();
+        return this.formatUser(user);
+      }
+
+      user.firebaseUid = identity.uid;
+      user.email = normalizedEmail || user.email;
+      user.firstName = identity.firstName ?? user.firstName;
+      user.lastName = identity.lastName ?? user.lastName;
+      user.phone = identity.phone ?? user.phone;
+      user.profileImage = identity.profileImage ?? user.profileImage;
+      user.lastLoginAt = new Date();
+      await user.save();
+
+      return this.formatUser(user);
+    } catch (error) {
+      throw new ApiError(500, 'Failed to sync Firebase user', error, 'getUserFailed');
     }
   }
 

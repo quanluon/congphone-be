@@ -230,7 +230,18 @@ export class AuthController {
         req.body.profileImage = storedProfileImage.publicUrl;
       }
       const { firstName, lastName, phone, profileImage } = req.body;
-      const updatedUser = await authService.updateUserProfile(user.cognitoId, {
+      const authProviderUid = user.firebaseUid || user.cognitoId;
+
+      if (!authProviderUid) {
+        throw new ApiError(
+          400,
+          "User auth provider identifier is missing",
+          null,
+          "userNotFound"
+        );
+      }
+
+      const updatedUser = await authService.updateUserProfile(authProviderUid, {
         firstName,
         lastName,
         phone,

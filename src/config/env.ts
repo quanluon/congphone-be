@@ -11,6 +11,7 @@ const DEFAULT_ALLOWED_ORIGINS = [
 export const REQUIRED_ENV_KEYS = [
   "MONGODB_URI",
   "MONGODB_NAME",
+  "FIREBASE_PROJECT_ID",
   "AWS_REGION",
   "COGNITO_USER_POOL_ID",
   "COGNITO_CLIENT_ID",
@@ -44,6 +45,8 @@ export const EnvVariables = {
   // MongoDB Configuration
   MONGODB_URI: process.env.MONGODB_URI,
   MONGODB_NAME: process.env.MONGODB_NAME,
+  FIREBASE_PROJECT_ID:
+    process.env.FIREBASE_PROJECT_ID || process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
 
   // AWS Configuration
   AWS_REGION: process.env.AWS_REGION,

@@ -1,7 +1,9 @@
 import cors from "cors";
 import express from "express";
 
+import "./config/database";
 import { EnvVariables } from "./config/env";
+import { ensureDatabaseConnection } from "./bootstrap";
 import { optionalAuth } from "./middleware/auth";
 import { errorHandler } from "./middleware/error";
 import routes from "./routes";
@@ -28,6 +30,15 @@ export const createApp = () => {
 
   app.use(express.json());
   app.use(requestLogger);
+
+  app.use(async (req, _res, next) => {
+    try {
+      await ensureDatabaseConnection();
+      next();
+    } catch (error) {
+      next(error);
+    }
+  });
 
   app.use("/", optionalAuth, routes);
   app.use(errorHandler);

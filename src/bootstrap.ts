@@ -1,4 +1,8 @@
-import connectToDatabase from "./config/database";
+import connectToDatabase, {
+  getDatabaseConnectionStateLabel,
+  isDatabaseConnected,
+} from "./config/database";
+import logger from "./utils/logger";
 import { EnvVariables, getMissingRequiredEnvKeys } from "./config/env";
 
 let runtimeInitialized = false;
@@ -29,7 +33,23 @@ export const initRuntime = async () => {
 
 export const ensureDatabaseConnection = async () => {
   await initRuntime();
-  return connectToDatabase();
+
+  if (isDatabaseConnected()) {
+    return;
+  }
+
+  try {
+    await connectToDatabase();
+  } catch (error) {
+    logger.error(
+      {
+        err: error,
+        connectionState: getDatabaseConnectionStateLabel(),
+      },
+      "Database initialization failed"
+    );
+    throw error;
+  }
 };
 
 export const prepareRuntime = async () => {

@@ -1,5 +1,5 @@
 import { NextFunction, Request, Response } from "express";
-import { verifyCognitoToken } from "../utils/jwt";
+import { verifyFirebaseToken } from "../utils/jwt";
 import { authService } from "../services/auth.service";
 import { ApiError } from "../utils/ApiResponse";
 import { IUser, UserType } from "../models/user.model";
@@ -13,6 +13,25 @@ declare global {
     }
   }
 }
+
+const mapFirebasePayloadToIdentity = (
+  payload: Awaited<ReturnType<typeof verifyFirebaseToken>>
+) => {
+  const fullName = payload.name?.trim();
+  const [firstName, ...remainingNameParts] = (fullName || "")
+    .split(" ")
+    .filter(Boolean);
+
+  return {
+    uid: payload.user_id || payload.sub,
+    email: payload.email,
+    firstName: firstName || undefined,
+    lastName: remainingNameParts.join(" ") || undefined,
+    fullName: fullName || undefined,
+    phone: payload.phone_number,
+    profileImage: payload.picture,
+  };
+};
 
 /**
  * Optional authentication middleware
@@ -32,11 +51,10 @@ export const optionalAuth = async (
     }
 
     try {
-      // Verify JWT token
-      const payload = await verifyCognitoToken(token);
-
-      // Get user from database
-      const user = await authService.getUserByCognitoId(payload.sub);
+      const payload = await verifyFirebaseToken(token);
+      const user = await authService.findOrCreateUserFromFirebaseIdentity(
+        mapFirebasePayloadToIdentity(payload)
+      );
 
       if (user) {
         req.user = user;

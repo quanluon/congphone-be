@@ -13,7 +13,8 @@ export enum UserStatus {
 
 export interface IUser {
   _id?: mongoose.Types.ObjectId;
-  cognitoId: string; // AWS Cognito user ID
+  cognitoId?: string; // Legacy AWS Cognito user ID
+  firebaseUid?: string;
   email: string;
   firstName?: string;
   lastName?: string;
@@ -29,9 +30,15 @@ export interface IUser {
 const userSchema = new mongoose.Schema<IUser>({
   cognitoId: {
     type: String,
-    required: true,
     unique: true,
     index: true,
+    sparse: true,
+  },
+  firebaseUid: {
+    type: String,
+    unique: true,
+    index: true,
+    sparse: true,
   },
   email: {
     type: String,
@@ -78,6 +85,7 @@ const userSchema = new mongoose.Schema<IUser>({
 // Indexes for performance
 userSchema.index({ email: 1, type: 1 });
 userSchema.index({ cognitoId: 1, type: 1 });
+userSchema.index({ firebaseUid: 1, type: 1 });
 userSchema.index({ status: 1 });
 
 // Virtual for full name

@@ -1,7 +1,7 @@
 import serverless from "serverless-http";
 
-import app from "./app";
 import { getRuntimeErrorPayload, prepareRuntime } from "./bootstrap";
+import app from "./app";
 import logger from "./utils/logger";
 
 // Create handler

@@ -1,7 +1,7 @@
 import express, { Request, Response } from "express";
 
-import app from "./app";
 import { getRuntimeErrorPayload, prepareRuntime } from "./bootstrap";
+import app from "./app";
 import logger from "./utils/logger";
 
 export const createVercelApp = () => {
