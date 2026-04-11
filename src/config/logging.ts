@@ -56,5 +56,5 @@ export const shouldLogRequest = (path: string, statusCode: number, duration: num
 
 export const shouldLogInfo = () => {
   const config = getLoggingConfig();
-  return config.level === 'debug' || config.level === 'warn';
+  return config.level === 'debug' || config.level === 'info';
 };
