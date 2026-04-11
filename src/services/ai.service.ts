@@ -63,7 +63,7 @@ Rules:
 3. Description: Use clean HTML (h3, p, ul, li). Avoid style attributes.
 4. Variants: Identify all colors and storage options. If prices differ, reflect that.
 5. Attributes: Extract technical specs like CPU, RAM, Screen, Battery.
-6. Images: Extract specific URLs of images.
+6. Images: Extract specific URLs of images. Always prefer original, large, zoom, or gallery images. Avoid thumbnails, swatches, icons, previews, or low-resolution placeholders.
 7. Logic: Ensure the 'basePrice' matches the cheapest variant.
 8. Optional Fields: If a field is not found, return null as per the schema (all fields are required but nullable).
 `,
