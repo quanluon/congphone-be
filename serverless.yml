@@ -1,4 +1,5 @@
 service: cong-phone-backend
+useDotenv: true
 
 frameworkVersion: '4'
 
@@ -54,7 +55,6 @@ functions:
 
 plugins:
   - serverless-offline
-  - serverless-dotenv-plugin
 
 custom:
   serverless-offline:
@@ -81,7 +81,6 @@ package:
     - '!node_modules/esbuild-visualizer/**'
     - '!node_modules/serverless/**'
     - '!node_modules/serverless-offline/**'
-    - '!node_modules/serverless-dotenv-plugin/**'
     - '!src/**'
     - '!*.md'
     - '!*.yml'
