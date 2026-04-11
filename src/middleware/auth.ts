@@ -1,8 +1,25 @@
 import { NextFunction, Request, Response } from "express";
+import mongoose from "mongoose";
 import { verifyFirebaseToken } from "../utils/jwt";
 import { authService } from "../services/auth.service";
 import { ApiError } from "../utils/ApiResponse";
-import { IUser, UserType } from "../models/user.model";
+import { IUser, UserType, UserStatus } from "../models/user.model";
+import { EnvVariables } from "../config/env";
+
+/** Synthetic admin user injected when a valid API key is provided */
+const API_KEY_USER: IUser = {
+  _id: new mongoose.Types.ObjectId("000000000000000000000000"),
+  email: "api-key@internal",
+  type: UserType.ADMIN,
+  status: UserStatus.ACTIVE,
+  createdAt: new Date(0),
+  updatedAt: new Date(0),
+};
+
+function resolveApiKey(req: Request): boolean {
+  const key = req.headers["x-api-key"] as string | undefined;
+  return !!(key && EnvVariables.API_KEY && key === EnvVariables.API_KEY);
+}
 
 // Extend Express Request interface
 declare global {
@@ -44,6 +61,12 @@ export const optionalAuth = async (
   next: NextFunction
 ) => {
   try {
+    // API key takes priority over Firebase token
+    if (resolveApiKey(req)) {
+      req.user = API_KEY_USER;
+      return next();
+    }
+
     const token = req.headers.authorization?.split(" ")[1];
 
     if (!token) {

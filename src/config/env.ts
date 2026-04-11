@@ -42,6 +42,7 @@ export const EnvVariables = {
   NODE_ENV: process.env.NODE_ENV || "development",
   LOG_LEVEL: process.env.LOG_LEVEL || "info",
   ALLOWED_ORIGINS: allowedOrigins,
+  API_KEY: process.env.API_KEY,
   // MongoDB Configuration
   MONGODB_URI: process.env.MONGODB_URI,
   MONGODB_NAME: process.env.MONGODB_NAME,
