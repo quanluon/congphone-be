@@ -61,6 +61,20 @@ export const errorHandler = (
       .json(ApiResponse.error(getMessage('tokenExpired', language), err).build());
   }
 
+  if (
+    err.message.includes("buffering timed out") ||
+    err.message.includes("before initial connection is complete") ||
+    err.message.includes("Server selection timed out")
+  ) {
+    return res
+      .status(503)
+      .json(
+        ApiResponse.error(
+          "Database connection is temporarily unavailable. Please try again shortly."
+        ).build()
+      );
+  }
+
   // Default error
   return res
     .status(500)

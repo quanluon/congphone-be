@@ -3,21 +3,40 @@ import logger from "../utils/logger";
 import { EnvVariables } from "./env";
 
 const isProduction = process.env.NODE_ENV === "production";
+const READY_STATE_CONNECTED = 1;
+const READY_STATE_CONNECTING = 2;
 
 let cachedDb: typeof mongoose | null = null;
 let connectionPromise: Promise<typeof mongoose> | null = null;
 
+mongoose.set("bufferCommands", false);
+mongoose.set("bufferTimeoutMS", 0);
+
 export async function connectToDatabase() {
-  if (cachedDb) {
+  if (
+    cachedDb &&
+    mongoose.connection.readyState === READY_STATE_CONNECTED
+  ) {
     return Promise.resolve(cachedDb);
   }
 
-  if (connectionPromise) {
+  if (
+    connectionPromise &&
+    mongoose.connection.readyState === READY_STATE_CONNECTING
+  ) {
     return connectionPromise;
   }
 
+  cachedDb = null;
+  connectionPromise = null;
+
   connectionPromise = mongoose
-    .connect(EnvVariables.MONGODB_URI!, { dbName: EnvVariables.MONGODB_NAME! })
+    .connect(EnvVariables.MONGODB_URI!, {
+      dbName: EnvVariables.MONGODB_NAME!,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 10000,
+      maxPoolSize: 10,
+    })
     .then((db) => {
       cachedDb = db;
       connectionPromise = null;
@@ -29,6 +48,7 @@ export async function connectToDatabase() {
     })
     .catch((err) => {
       connectionPromise = null;
+      cachedDb = null;
       logger.error("MongoDB connection error:", err);
       throw err;
     });

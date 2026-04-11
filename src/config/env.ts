@@ -58,6 +58,8 @@ export const EnvVariables = {
   TELEGRAM_CHAT_ID: process.env.TELEGRAM_CHAT_ID,
   TELEGRAM_MENTION_USER_IDS:
     process.env.TELEGRAM_MENTION_USER_IDS || "1659457166",
+  AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
+  AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
 } as const;
 
 export const getMissingRequiredEnvKeys = (): RequiredEnvKey[] =>
