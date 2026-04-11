@@ -1,8 +1,5 @@
 import mongoose from 'mongoose';
-import dotenv from 'dotenv';
-
-// Load environment variables first
-dotenv.config();
+import '../config/env';
 
 import connectToDatabase from '../config/database';
 import { Product, ProductType, ProductStatus } from '../models/product.model';

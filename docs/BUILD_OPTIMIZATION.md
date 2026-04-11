@@ -37,10 +37,11 @@
 ### 4. **Build Scripts**
 ```json
 {
-  "build": "yarn build:esbuild",
-  "build:esbuild": "node esbuild.config.js",
-  "build:esbuild:prod": "NODE_ENV=production node esbuild.config.js",
-  "build:analyze": "yarn build:esbuild && yarn analyze:bundle",
+  "build": "yarn build:shared && yarn build:lambda && yarn build:vercel",
+  "build:shared": "BUILD_TARGET=all node esbuild.config.js",
+  "build:lambda": "BUILD_TARGET=lambda node esbuild.config.js",
+  "build:vercel": "BUILD_TARGET=vercel node esbuild.config.js",
+  "build:analyze": "yarn build:shared && yarn analyze:bundle",
   "analyze:deps": "node scripts/analyze-deps.js"
 }
 ```
@@ -132,8 +133,9 @@ yarn build
 # Development with hot reload
 yarn dev
 
-# Production build
-yarn build:esbuild:prod
+# Target-specific builds
+yarn build:lambda
+yarn build:vercel
 ```
 
 ### For Deployment

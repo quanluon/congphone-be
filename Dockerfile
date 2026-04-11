@@ -16,7 +16,7 @@ RUN yarn install --frozen-lockfile --production=false
 COPY . .
 
 # Build the application
-RUN yarn build:esbuild:prod
+RUN NODE_ENV=production yarn build:lambda
 
 # Production image - Use AWS Lambda Node.js base image
 FROM public.ecr.aws/lambda/nodejs:20
@@ -37,4 +37,3 @@ ENV NODE_ENV=production
 
 # Lambda handler
 CMD ["dist/handler.handler"]
-

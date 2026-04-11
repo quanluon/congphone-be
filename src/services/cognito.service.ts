@@ -64,27 +64,24 @@ export interface SocialUserInfo {
 }
 
 export class CognitoService {
-  private client: CognitoIdentityProviderClient;
-  private userPoolId: string;
-  private clientId: string;
+  private client: CognitoIdentityProviderClient | null = null;
 
-  constructor() {
-    // Validate required environment variables
-    if (!EnvVariables.AWS_REGION) {
-      throw new Error('AWS_REGION environment variable is required');
-    }
-    if (!EnvVariables.COGNITO_USER_POOL_ID) {
-      throw new Error('COGNITO_USER_POOL_ID environment variable is required');
-    }
-    if (!EnvVariables.COGNITO_CLIENT_ID) {
-      throw new Error('COGNITO_CLIENT_ID environment variable is required');
+  private getClient() {
+    if (!this.client) {
+      this.client = new CognitoIdentityProviderClient({
+        region: EnvVariables.AWS_REGION,
+      });
     }
 
-    this.client = new CognitoIdentityProviderClient({
-      region: EnvVariables.AWS_REGION,
-    });
-    this.userPoolId = EnvVariables.COGNITO_USER_POOL_ID;
-    this.clientId = EnvVariables.COGNITO_CLIENT_ID;
+    return this.client;
+  }
+
+  private get userPoolId() {
+    return EnvVariables.COGNITO_USER_POOL_ID;
+  }
+
+  private get clientId() {
+    return EnvVariables.COGNITO_CLIENT_ID;
   }
 
   /**
@@ -126,7 +123,7 @@ export class CognitoService {
         MessageAction: 'SUPPRESS', // Don't send welcome email
       });
 
-      const response = await this.client.send(command);
+      const response = await this.getClient().send(command);
 
       // Set permanent password
       await this.setUserPassword(data.email, data.password);
@@ -176,7 +173,7 @@ export class CognitoService {
         Permanent: true,
       });
 
-      await this.client.send(command);
+      await this.getClient().send(command);
     } catch (error: any) {
       if (error instanceof ApiError) {
         throw error;
@@ -221,7 +218,7 @@ export class CognitoService {
         },
       });
 
-      const response = await this.client.send(command);
+      const response = await this.getClient().send(command);
 
       if (response.ChallengeName) {
         throw new ApiError(400, 'Password change required', null, 'passwordChangeRequired');
@@ -284,7 +281,7 @@ export class CognitoService {
         },
       });
 
-      const response = await this.client.send(command);
+      const response = await this.getClient().send(command);
 
       if (!response.AuthenticationResult) {
         throw new ApiError(401, 'Token refresh failed', null, 'tokenRefreshFailed');
@@ -313,7 +310,7 @@ export class CognitoService {
         AccessToken: accessToken,
       });
 
-      await this.client.send(command);
+      await this.getClient().send(command);
     } catch (error: any) {
       if (error instanceof ApiError) {
         throw error;
@@ -332,7 +329,7 @@ export class CognitoService {
         Username: email,
       });
 
-      await this.client.send(command);
+      await this.getClient().send(command);
     } catch (error: any) {
       if (error.name === 'UserNotFoundException') {
         throw new ApiError(404, 'User not found', null, 'userNotFound');
@@ -360,7 +357,7 @@ export class CognitoService {
         Password: newPassword,
       });
 
-      await this.client.send(command);
+      await this.getClient().send(command);
     } catch (error: any) {
       if (error.name === 'CodeMismatchException') {
         throw new ApiError(400, 'Invalid confirmation code', null, 'invalidConfirmationCode');
@@ -395,7 +392,7 @@ export class CognitoService {
         ProposedPassword: newPassword,
       });
 
-      await this.client.send(command);
+      await this.getClient().send(command);
     } catch (error: any) {
       if (error instanceof ApiError) {
         throw error;
@@ -426,7 +423,7 @@ export class CognitoService {
         Username: email,
       });
 
-      const response = await this.client.send(command);
+      const response = await this.getClient().send(command);
 
       const attributes = response.UserAttributes || [];
       const getAttribute = (name: string) => 
@@ -465,7 +462,7 @@ export class CognitoService {
         UserAttributes: userAttributes,
       });
 
-      await this.client.send(command);
+      await this.getClient().send(command);
     } catch (error: any) {
       if (error.name === 'UserNotFoundException') {
         throw new ApiError(404, 'User not found', null, 'userNotFound');
@@ -484,7 +481,7 @@ export class CognitoService {
         Username: email,
       });
 
-      await this.client.send(command);
+      await this.getClient().send(command);
     } catch (error: any) {
       if (error.name === 'UserNotFoundException') {
         throw new ApiError(404, 'User not found', null, 'userNotFound');
@@ -617,7 +614,7 @@ export class CognitoService {
         MessageAction: 'SUPPRESS',
       });
 
-      const response = await this.client.send(command);
+      const response = await this.getClient().send(command);
 
       // Set permanent password
       await this.setUserPassword(socialUserInfo.email, randomPassword);

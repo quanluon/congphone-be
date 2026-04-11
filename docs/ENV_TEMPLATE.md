@@ -16,9 +16,11 @@ ECR_REPOSITORY=mobile/be
 
 # MongoDB Database
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
+MONGODB_NAME=cong-phone
 
 # AWS S3 Storage
 S3_BUCKET=your-s3-bucket-name
+CLOUDFRONT_STORAGE_ENDPOINT=https://cdn.example.com
 
 # AWS Cognito Authentication
 COGNITO_USER_POOL_ID=ap-southeast-1_xxxxxxxxx
@@ -26,6 +28,8 @@ COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 # Application Environment
 NODE_ENV=production
+DASHBOARD_URL=https://admin.example.com
+ALLOWED_ORIGINS=https://shop.example.com,https://admin.example.com
 ```
 
 ## Optional Variables
@@ -34,6 +38,7 @@ NODE_ENV=production
 # Telegram Notifications (if using)
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_CHAT_ID=your_telegram_chat_id
+TELEGRAM_MENTION_USER_IDS=123456789,987654321
 ```
 
 ## How to Create `.env` File
@@ -59,11 +64,15 @@ AWS_ACCOUNT_ID=018134828672
 ECR_REPOSITORY=mobile/be
 
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
+MONGODB_NAME=cong-phone
 S3_BUCKET=your-s3-bucket-name
+CLOUDFRONT_STORAGE_ENDPOINT=https://cdn.example.com
 COGNITO_USER_POOL_ID=ap-southeast-1_xxxxxxxxx
 COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
 
 NODE_ENV=production
+DASHBOARD_URL=https://admin.example.com
+ALLOWED_ORIGINS=https://shop.example.com,https://admin.example.com
 EOF
 
 # Edit with your preferred editor
@@ -124,4 +133,3 @@ ls -la .env
 # Check if variables are loadable (don't display values)
 node -e "require('dotenv').config(); console.log('✅ .env loaded successfully');"
 ```
-

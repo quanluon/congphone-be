@@ -1,6 +1,6 @@
 # Cong Phone Backend
 
-A comprehensive serverless Node.js Express backend for an Apple product webshop, built with AWS Lambda, MongoDB, and AWS Cognito authentication.
+A comprehensive serverless Node.js Express backend for an Apple product webshop, built for dual deployment on Vercel and AWS Lambda, with MongoDB and AWS Cognito authentication.
 
 ## 🚀 Features
 
@@ -16,7 +16,7 @@ A comprehensive serverless Node.js Express backend for an Apple product webshop,
 - **Multi-language Support**: English and Vietnamese message responses
 - **JWT Token Management**: Access and refresh token handling
 - **Role-based Access Control**: Customer and admin permission separation
-- **Serverless Architecture**: Deploy to AWS Lambda
+- **Serverless Architecture**: Shared Express core with platform-specific adapters
 - **Comprehensive Error Handling**: Centralized error management with translation
 - **Input Validation**: Joi-based request validation
 - **Database Seeding**: Automated data population scripts
@@ -27,7 +27,7 @@ A comprehensive serverless Node.js Express backend for an Apple product webshop,
 - **Framework**: Express.js with serverless-http
 - **Database**: MongoDB with Mongoose ODM
 - **Authentication**: AWS Cognito with JWT tokens
-- **Deployment**: AWS Lambda via Serverless Framework
+- **Deployment**: Vercel or AWS Lambda via Serverless Framework
 - **File Storage**: AWS S3 with presigned URLs
 - **Language**: TypeScript
 - **Validation**: Joi schemas
@@ -199,10 +199,12 @@ This creates an admin user with:
 ```env
 # Database
 MONGODB_URI=mongodb://localhost:27017/cong-phone
+MONGODB_NAME=cong-phone
 
 # AWS Configuration
 AWS_REGION=ap-southeast-1
 S3_BUCKET=your-s3-bucket
+CLOUDFRONT_STORAGE_ENDPOINT=https://cdn.example.com
 
 # AWS Cognito
 COGNITO_USER_POOL_ID=your_user_pool_id
@@ -210,17 +212,25 @@ COGNITO_CLIENT_ID=your_client_id
 
 # Application
 NODE_ENV=development
+DASHBOARD_URL=http://localhost:5173
+ALLOWED_ORIGINS=http://localhost:3000,http://localhost:3001,http://localhost:5173
 ```
 
 ## Deployment
 
-This backend uses Docker containers deployed to AWS Lambda via Amazon ECR (Elastic Container Registry).
+This backend uses a shared Express application with two deployment adapters:
+
+- **AWS Lambda**: Docker container deployed via Amazon ECR and Serverless Framework
+- **Vercel**: Separate backend project rooted at `be/`, using `index.js` as the platform entrypoint
 
 ### Quick Start
 
 ```bash
 # One-command deployment
 yarn deploy
+
+# Vercel build
+yarn build:vercel
 ```
 
 For detailed deployment instructions, see:
@@ -237,12 +247,21 @@ For detailed deployment instructions, see:
 ### Deployment Commands
 
 ```bash
-# Complete deployment (ECR + Lambda)
+# Shared build outputs
+yarn build
+yarn build:lambda
+yarn build:vercel
+
+# Complete AWS deployment (ECR + Lambda)
 yarn deploy
 
-# Step-by-step deployment
+# AWS step-by-step deployment
 yarn deploy:ecr              # Build and push to ECR
 yarn deploy:serverless       # Deploy to Lambda
+
+# Vercel deployment
+# Set project root to be/
+# Entry point: index.js
 
 # Local Docker testing
 yarn docker:build            # Build image

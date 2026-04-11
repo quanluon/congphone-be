@@ -1,16 +1,37 @@
 const esbuild = require('esbuild');
-const path = require('path');
 const fs = require('fs');
 
 const isProduction = process.env.NODE_ENV === 'production';
+const buildTarget = process.env.BUILD_TARGET || 'all';
+
+const entryPointsByTarget = {
+  all: {
+    app: 'src/app.ts',
+    handler: 'src/handler.ts',
+    vercel: 'src/vercel.ts',
+  },
+  lambda: {
+    handler: 'src/handler.ts',
+  },
+  vercel: {
+    app: 'src/app.ts',
+    vercel: 'src/vercel.ts',
+  },
+};
+
+const selectedEntryPoints = entryPointsByTarget[buildTarget];
+
+if (!selectedEntryPoints) {
+  throw new Error(`Unsupported BUILD_TARGET: ${buildTarget}`);
+}
 
 const config = {
-  entryPoints: ['src/handler.ts'],
+  entryPoints: selectedEntryPoints,
   bundle: true,
   platform: 'node',
   target: 'node20',
   format: 'cjs',
-  outfile: 'dist/handler.js',
+  outdir: 'dist',
   external: [
     // AWS SDK is provided by Lambda runtime
     'aws-sdk',
@@ -22,6 +43,8 @@ const config = {
     'bcryptjs',
     'jsonwebtoken',
     'joi',
+    'pino',
+    'pino-pretty',
     'winston',
     'dotenv',
     'serverless-http',
@@ -37,7 +60,7 @@ const config = {
   },
   metafile: true,
   logLevel: 'info',
-  // Optimize for Lambda
+  // Optimize for Node serverless runtimes
   mainFields: ['main', 'module'],
   conditions: ['node'],
   // Remove unused code
@@ -47,14 +70,23 @@ const config = {
 // Build function
 async function build() {
   try {
+    fs.mkdirSync('dist', { recursive: true });
     const result = await esbuild.build(config);
     
     if (result.metafile) {
       // Write metadata file for esbuild-visualizer
-      fs.writeFileSync('dist/handler.js.meta.json', JSON.stringify(result.metafile, null, 2));
+      const metafileName =
+        buildTarget === 'all'
+          ? 'dist/build.meta.json'
+          : `dist/${buildTarget}.meta.json`;
+      fs.writeFileSync(metafileName, JSON.stringify(result.metafile, null, 2));
       
       console.log('\n📊 Bundle Analysis:');
-      console.log('Entry point size:', (result.metafile.outputs['dist/handler.js']?.bytes || 0) / 1024, 'KB');
+      Object.entries(result.metafile.outputs)
+        .filter(([file]) => file.endsWith('.js'))
+        .forEach(([file, meta]) => {
+          console.log(`${file}: ${(meta.bytes / 1024).toFixed(2)} KB`);
+        });
       
       // Show largest dependencies
       const outputs = Object.entries(result.metafile.outputs);
@@ -73,7 +105,7 @@ async function build() {
       }
     }
     
-    console.log('✅ Build completed successfully');
+    console.log(`✅ Build completed successfully for target: ${buildTarget}`);
   } catch (error) {
     console.error('❌ Build failed:', error);
     process.exit(1);
