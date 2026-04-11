@@ -3,6 +3,7 @@ import productRoutes from "./product.routes";
 import brandRoutes from "./brand.routes";
 import categoryRoutes from "./category.routes";
 import orderRoutes from "./order.routes";
+import userRoutes from "./user.routes";
 
 const router = Router();
 
@@ -18,7 +19,7 @@ router.use("/categories", categoryRoutes);
 // Admin order management routes
 router.use("/orders", orderRoutes);
 
-// Add other admin routes here as needed
-// router.use("/users", userRoutes);
+// Admin user management routes
+router.use("/users", userRoutes);
 
 export default router;
