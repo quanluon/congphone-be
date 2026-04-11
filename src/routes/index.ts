@@ -1,4 +1,4 @@
-import { adminOnly, requiredAuth } from "@/middleware/auth";
+import { adminOnly, requiredAuth } from "../middleware/auth";
 import { Router } from "express";
 import adminRoutes from "./admin";
 import authRoutes from "./auth.routes";

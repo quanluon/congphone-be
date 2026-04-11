@@ -1,4 +1,4 @@
-import { S3Service } from "@/services/s3.service";
+import { S3Service } from "../../services/s3.service";
 import { NextFunction, Request, Response } from "express";
 import { CategoryService } from "../../services/category.service";
 import { ApiError, ApiResponse } from "../../utils/ApiResponse";

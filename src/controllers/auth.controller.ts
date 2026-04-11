@@ -3,7 +3,7 @@ import { ApiResponse, ApiError } from "../utils/ApiResponse";
 import { authService } from "../services/auth.service";
 import { getCurrentUser } from "../middleware/auth";
 import { UserType } from "../models/user.model";
-import { S3Service } from "@/services/s3.service";
+import { S3Service } from "../services/s3.service";
 
 export class AuthController {
   s3Service = new S3Service();

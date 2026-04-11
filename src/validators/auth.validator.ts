@@ -1,4 +1,4 @@
-import { UserStatus, UserType } from '@/models/user.model';
+import { UserStatus, UserType } from '../models/user.model';
 import Joi from 'joi';
 
 export const registerSchema = Joi.object({
