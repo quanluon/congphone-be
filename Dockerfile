@@ -1,5 +1,5 @@
 # Multi-stage build for optimized image size
-FROM node:20-alpine AS builder
+FROM node:24-alpine AS builder
 
 # Install build dependencies
 RUN apk add --no-cache python3 make g++
@@ -19,7 +19,7 @@ COPY . .
 RUN NODE_ENV=production yarn build:lambda
 
 # Production image - Use AWS Lambda Node.js base image
-FROM public.ecr.aws/lambda/nodejs:20
+FROM public.ecr.aws/lambda/nodejs:24
 
 # Copy package files for production dependencies
 COPY package.json yarn.lock ./

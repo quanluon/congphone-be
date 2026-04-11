@@ -29,7 +29,7 @@ const config = {
   entryPoints: selectedEntryPoints,
   bundle: true,
   platform: 'node',
-  target: 'node20',
+  target: 'node24',
   format: 'cjs',
   outdir: 'dist',
   external: [
