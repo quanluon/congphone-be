@@ -65,6 +65,9 @@ export const EnvVariables = {
   AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,
   AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,
   OPENAI_API_KEY: process.env.OPENAI_API_KEY,
+  PRODUCT_VECTOR_MODEL: process.env.PRODUCT_VECTOR_MODEL,
+  PRODUCT_VECTOR_CACHE_DIR: process.env.PRODUCT_VECTOR_CACHE_DIR,
+  PRODUCT_VECTOR_QUANTIZED: process.env.PRODUCT_VECTOR_QUANTIZED,
 } as const;
 
 export const getMissingRequiredEnvKeys = (): RequiredEnvKey[] =>

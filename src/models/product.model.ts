@@ -70,6 +70,7 @@ export interface IProduct {
   tags: string[]; // For filtering and search
   metaTitle?: string;
   metaDescription?: string;
+  vector?: number[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -276,6 +277,11 @@ const productSchema = new mongoose.Schema<IProduct>(
     metaDescription: {
       type: String,
       trim: true,
+    },
+    vector: {
+      type: [Number],
+      default: undefined,
+      select: false,
     },
   },
   {

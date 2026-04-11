@@ -278,7 +278,7 @@ export class AdminProductController {
 
       // Use Promise.all for parallel updates as per user preference
       const updatePromises = productIds.map((id: string) =>
-        Product.findByIdAndUpdate(id, updateData, { new: true })
+        this.productService.updateProduct(id, updateData)
       );
 
       const updatedProducts = await Promise.all(updatePromises);
@@ -497,21 +497,18 @@ export class AdminProductController {
         throw new ApiError(400, 'Variants must be an array', null, 'invalidInput');
       }
 
-      const product = await Product.findById(id);
+      const basePrice = variants.length > 0
+        ? Math.min(...variants.map((variant: IProductVariant) => variant.price))
+        : undefined;
+
+      const product = await this.productService.updateProduct(id, {
+        variants,
+        ...(typeof basePrice === "number" ? { basePrice } : {}),
+      });
+
       if (!product) {
         throw new ApiError(404, 'Product not found', null, 'productNotFound');
       }
-
-      // Update variants
-      product.variants = variants;
-
-      // Recalculate base price
-      if (variants.length > 0) {
-        const prices = variants.map((v: IProductVariant) => v.price);
-        product.basePrice = Math.min(...prices);
-      }
-
-      await product.save();
 
       const populatedProduct = await Product.findById(product._id)
         .populate("category", "name slug")
