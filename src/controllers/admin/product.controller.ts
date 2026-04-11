@@ -15,6 +15,22 @@ export class AdminProductController {
   private productService = new ProductService();
   private s3Service = new S3Service();
 
+  private logDuration(
+    requestStartedAt: number,
+    stepStartedAt: number,
+    stepName: string,
+    extra: Record<string, unknown> = {},
+  ) {
+    logger.info(
+      {
+        ...extra,
+        [stepName]: Date.now() - stepStartedAt,
+        totalMs: Date.now() - requestStartedAt,
+      },
+      `${stepName} completed`,
+    );
+  }
+
   // Helper method to process uploaded files and move them to permanent storage
   private async processUploadedFiles(productData: any): Promise<any> {
     const processedData = { ...productData };
@@ -22,11 +38,10 @@ export class AdminProductController {
     // Process main product images
     if (processedData.images?.length) {
       try {
-        const movedImages = await this.s3Service.moveMultipleToPermanent(
+        processedData.images = await this.s3Service.persistImageSources(
           processedData.images,
-          'products'
+          'products',
         );
-        processedData.images = movedImages.map(img => img.publicUrl);
       } catch (error) {
         logger.error({ err: error }, 'Error moving product images');
         throw new ApiError(500, 'Failed to process product images', null, 'imageProcessingError');
@@ -39,11 +54,10 @@ export class AdminProductController {
         const variant = processedData.variants[i];
         if (variant.images?.length) {
           try {
-            const movedImages = await this.s3Service.moveMultipleToPermanent(
+            variant.images = await this.s3Service.persistImageSources(
               variant.images,
-              'products/variants'
+              'products/variants',
             );
-            variant.images = movedImages.map(img => img.publicUrl);
           } catch (error) {
             logger.error({ err: error, variantIndex: i }, `Error moving variant ${i} images`);
             throw new ApiError(500, `Failed to process variant ${i + 1} images`, null, 'variantImageProcessingError');
@@ -484,6 +498,7 @@ export class AdminProductController {
   // Extract product data via AI with crawling and validation
   async aiExtractProduct(req: Request, res: Response, next: NextFunction) {
     try {
+      const requestStartedAt = Date.now();
       const { promptText, imageUrl } = req.body;
 
       let htmlContent: string | undefined;
@@ -491,20 +506,32 @@ export class AdminProductController {
 
       // 1. Crawl if it's a URL
       if (isUrl) {
+        const crawlStartedAt = Date.now();
         try {
           logger.info({ url: promptText }, 'Detected URL, starting crawl');
           htmlContent = await crawler.crawl(promptText.trim());
+          this.logDuration(requestStartedAt, crawlStartedAt, 'crawlMs', {
+            crawledChars: htmlContent?.length ?? 0,
+          });
         } catch (crawlError: any) {
+          this.logDuration(requestStartedAt, crawlStartedAt, 'crawlMs', {
+            crawlFailed: true,
+          });
           logger.warn({ err: crawlError }, 'Crawling failed, falling back to AI alone');
         }
       }
 
       // 2. Extract via AI
+      const openAiStartedAt = Date.now();
       logger.info('Starting AI extraction with OpenAI');
       const extractedData: any = await aiService.extractProductData({
         promptText: isUrl ? undefined : promptText,
         htmlContent,
         imageUrl
+      });
+      this.logDuration(requestStartedAt, openAiStartedAt, 'openAiMs', {
+        extractedProductName: extractedData.name,
+        numVariants: extractedData.variants?.length ?? 0,
       });
       logger.info({
         extractedProductName: extractedData.name,
@@ -512,6 +539,7 @@ export class AdminProductController {
       }, 'AI extraction completed');
 
       // 3. Match Category and Brand names to IDs
+      const matchMetaStartedAt = Date.now();
       const [categories, brands] = await Promise.all([
         Category.find({ isActive: true }).select('name'),
         Brand.find({ isActive: true }).select('name')
@@ -544,43 +572,17 @@ export class AdminProductController {
         }
         delete extractedData.brandName;
       }
+      this.logDuration(requestStartedAt, matchMetaStartedAt, 'matchMetaMs');
 
-      // 4. Normalize and processing images
+      // 4. Normalize extracted values
       // Normalize productType to lowercase to match enum
       if (extractedData.productType) {
         extractedData.productType = extractedData.productType.toLowerCase();
       }
 
-      // 5. Fetch and Upload images to S3
-      logger.info('Starting S3 image uploads for AI extracted data');
-
-      // Process main images
-      if (extractedData.images && Array.isArray(extractedData.images)) {
-        logger.info({ count: extractedData.images.length }, 'Uploading main product images');
-        const uploadedImages = await Promise.all(
-          extractedData.images.map((url: string, index: number) => {
-            logger.info({ index: index + 1, url }, 'Uploading image');
-            return this.s3Service.uploadFromUrl(url, 'products');
-          })
-        );
-        extractedData.images = uploadedImages;
-      }
-
-      // Process variant images
       if (extractedData.variants && Array.isArray(extractedData.variants)) {
-        logger.info({ count: extractedData.variants.length }, 'Processing variant images');
         for (let i = 0; i < extractedData.variants.length; i++) {
           const variant = extractedData.variants[i];
-          if (variant.images && Array.isArray(variant.images)) {
-            logger.info({ variantIndex: i, count: variant.images.length }, 'Uploading variant images');
-            const uploadedVariantImages = await Promise.all(
-              variant.images.map((url: string, imgIdx: number) => {
-                logger.info({ variantIndex: i, imgIdx: imgIdx + 1 }, 'Uploading variant image');
-                return this.s3Service.uploadFromUrl(url, 'products/variants');
-              })
-            );
-            variant.images = uploadedVariantImages;
-          }
           // Ensure default stock
           if (typeof variant.stock !== 'number') {
             variant.stock = 10;
@@ -588,14 +590,62 @@ export class AdminProductController {
         }
       }
 
-      logger.info('Image uploads completed');
+      // 5. Upload extracted images to S3 in parallel
+      const uploadImagesStartedAt = Date.now();
+      const uploadTasks: Promise<void>[] = [];
+
+      if (extractedData.images && Array.isArray(extractedData.images)) {
+        uploadTasks.push(
+          this.s3Service
+            .persistImageSources(extractedData.images, 'products')
+            .then((uploadedImages) => {
+              extractedData.images = uploadedImages;
+            }),
+        );
+      }
+
+      if (extractedData.variants && Array.isArray(extractedData.variants)) {
+        uploadTasks.push(
+          Promise.all(
+            extractedData.variants.map(async (variant: any) => {
+              if (!Array.isArray(variant.images) || variant.images.length === 0) {
+                variant.images = [];
+                return;
+              }
+
+              variant.images = await this.s3Service.persistImageSources(
+                variant.images,
+                'products/variants',
+              );
+            }),
+          ).then(() => undefined),
+        );
+      }
+
+      if (uploadTasks.length > 0) {
+        await Promise.all(uploadTasks);
+        this.logDuration(requestStartedAt, uploadImagesStartedAt, 'uploadImagesMs', {
+          mainImageCount: extractedData.images?.length ?? 0,
+          variantImageCount: Array.isArray(extractedData.variants)
+            ? extractedData.variants.reduce(
+                (total: number, variant: any) =>
+                  total + (Array.isArray(variant.images) ? variant.images.length : 0),
+                0,
+              )
+            : 0,
+        });
+      }
 
       // 6. Default values and validation
+      const validationStartedAt = Date.now();
       extractedData.status = extractedData.status || ProductStatus.DRAFT;
 
       const { error, value } = createProductSchema.validate(extractedData, {
         abortEarly: false,
         allowUnknown: true
+      });
+      this.logDuration(requestStartedAt, validationStartedAt, 'validationMs', {
+        validationFailed: Boolean(error),
       });
 
       if (error) {

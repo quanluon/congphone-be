@@ -71,6 +71,18 @@ export class S3Service {
     return `https://${this.bucket}.s3.${EnvVariables.AWS_REGION}.amazonaws.com/`;
   }
 
+  isManagedUrl(url: string): boolean {
+    if (!url) return false;
+
+    const cloudfrontBase = EnvVariables.CLOUDFRONT_STORAGE_ENDPOINT;
+
+    return (
+      url.startsWith(this.getBaseUrl()) ||
+      url.startsWith(cloudfrontBase!) ||
+      url.includes(`/${this.defaultFolder}/`)
+    );
+  }
+
   // getPublicUrl(key: string): string {
   //   return `https://${this.bucket}.s3.${EnvVariables.AWS_REGION}.amazonaws.com/${key}`;
   // }
@@ -111,6 +123,17 @@ export class S3Service {
       key: destinationKey,
       publicUrl: this.getPublicUrl(destinationKey),
     };
+  }
+
+  async persistImageSource(sourceUrl: string, folder: string): Promise<string> {
+    if (!sourceUrl) return sourceUrl;
+
+    if (this.isManagedUrl(sourceUrl)) {
+      const { publicUrl } = await this.moveToPermanent(sourceUrl, folder);
+      return publicUrl;
+    }
+
+    return this.uploadFromUrl(sourceUrl, folder);
   }
 
   // Upload file from a URL
@@ -156,5 +179,14 @@ export class S3Service {
     );
 
     return results;
+  }
+
+  async persistImageSources(
+    sourceUrls: string[],
+    folder: string = "products",
+  ): Promise<string[]> {
+    return Promise.all(
+      sourceUrls.map((sourceUrl) => this.persistImageSource(sourceUrl, folder)),
+    );
   }
 }

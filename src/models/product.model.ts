@@ -283,9 +283,28 @@ const productSchema = new mongoose.Schema<IProduct>(
   }
 );
 
+const formatSlugTimestamp = (date = new Date()) => {
+  const pad = (value: number) => String(value).padStart(2, "0");
+
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+    pad(date.getHours()),
+    pad(date.getMinutes()),
+    pad(date.getSeconds()),
+  ].join("");
+};
+
+const buildUniqueProductSlug = (name: string) => {
+  return `${toSlug(name || "product")}-${formatSlugTimestamp()}`;
+};
+
 // Create slug from name
 productSchema.pre("save", function (next) {
-  if (this.isModified("name") || !this.slug) {
+  if (this.isNew && (this.isModified("name") || !this.slug)) {
+    this.slug = buildUniqueProductSlug(this.name);
+  } else if (!this.slug) {
     this.slug = toSlug(this.name);
   }
   next();
@@ -294,7 +313,9 @@ productSchema.pre("save", function (next) {
 // Validate slug is present
 productSchema.pre("validate", function (next) {
   if (!this.slug) {
-    this.slug = toSlug(this.name);
+    this.slug = this.isNew
+      ? buildUniqueProductSlug(this.name)
+      : toSlug(this.name);
   }
   next();
 });
