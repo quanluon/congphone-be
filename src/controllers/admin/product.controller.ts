@@ -5,6 +5,11 @@ import { S3Service } from "../../services/s3.service";
 import { ApiError, ApiResponse } from "../../utils/ApiResponse";
 import { paginate } from "../../utils/pagination";
 import logger from "../../utils/logger";
+import { aiService } from "../../services/ai.service";
+import { crawler } from "../../utils/crawler";
+import { Category } from "../../models/category.model";
+import { Brand } from "../../models/brand.model";
+import { createProductSchema } from "../../validators/admin/product.validator";
 
 export class AdminProductController {
   private productService = new ProductService();
@@ -230,7 +235,7 @@ export class AdminProductController {
       }
 
       // Use Promise.all for parallel updates as per user preference
-      const updatePromises = productIds.map((id: string) => 
+      const updatePromises = productIds.map((id: string) =>
         Product.findByIdAndUpdate(id, updateData, { new: true })
       );
 
@@ -255,7 +260,7 @@ export class AdminProductController {
       }
 
       // Use Promise.all for parallel updates as per user preference
-      const deletePromises = productIds.map((id: string) => 
+      const deletePromises = productIds.map((id: string) =>
         Product.findByIdAndUpdate(id, { status: ProductStatus.INACTIVE }, { new: true })
       );
 
@@ -366,7 +371,7 @@ export class AdminProductController {
         { status },
         { new: true }
       ).populate("category", "name slug")
-       .populate("brand", "name slug logo");
+        .populate("brand", "name slug logo");
 
       if (!product) {
         throw new ApiError(404, 'Product not found', null, 'productNotFound');
@@ -471,6 +476,138 @@ export class AdminProductController {
         .populate("brand", "name slug logo");
 
       res.json(ApiResponse.success(populatedProduct).build());
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Extract product data via AI with crawling and validation
+  async aiExtractProduct(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { promptText, imageUrl } = req.body;
+
+      let htmlContent: string | undefined;
+      const isUrl = promptText && /^https?:\/\/[^\s$.?#].[^\s]*$/i.test(promptText.trim());
+
+      // 1. Crawl if it's a URL
+      if (isUrl) {
+        try {
+          logger.info({ url: promptText }, 'Detected URL, starting crawl');
+          htmlContent = await crawler.crawl(promptText.trim());
+        } catch (crawlError: any) {
+          logger.warn({ err: crawlError }, 'Crawling failed, falling back to AI alone');
+        }
+      }
+
+      // 2. Extract via AI
+      logger.info('Starting AI extraction with OpenAI');
+      const extractedData: any = await aiService.extractProductData({
+        promptText: isUrl ? undefined : promptText,
+        htmlContent,
+        imageUrl
+      });
+      logger.info({
+        extractedProductName: extractedData.name,
+        numVariants: extractedData.variants?.length
+      }, 'AI extraction completed');
+
+      // 3. Match Category and Brand names to IDs
+      const [categories, brands] = await Promise.all([
+        Category.find({ isActive: true }).select('name'),
+        Brand.find({ isActive: true }).select('name')
+      ]);
+
+      if (extractedData.categoryName) {
+        const matchedCategory = categories.find(c =>
+          c.name.toLowerCase().includes(extractedData.categoryName.toLowerCase()) ||
+          extractedData.categoryName.toLowerCase().includes(c.name.toLowerCase())
+        );
+        if (matchedCategory) {
+          logger.info({ matchedCategory: matchedCategory.name }, 'Category matched');
+          extractedData.category = matchedCategory._id.toString();
+        } else {
+          logger.warn({ categoryName: extractedData.categoryName }, 'No matching category found');
+        }
+        delete extractedData.categoryName;
+      }
+
+      if (extractedData.brandName) {
+        const matchedBrand = brands.find(b =>
+          b.name.toLowerCase().includes(extractedData.brandName.toLowerCase()) ||
+          extractedData.brandName.toLowerCase().includes(b.name.toLowerCase())
+        );
+        if (matchedBrand) {
+          logger.info({ matchedBrand: matchedBrand.name }, 'Brand matched');
+          extractedData.brand = matchedBrand._id.toString();
+        } else {
+          logger.warn({ brandName: extractedData.brandName }, 'No matching brand found');
+        }
+        delete extractedData.brandName;
+      }
+
+      // 4. Normalize and processing images
+      // Normalize productType to lowercase to match enum
+      if (extractedData.productType) {
+        extractedData.productType = extractedData.productType.toLowerCase();
+      }
+
+      // 5. Fetch and Upload images to S3
+      logger.info('Starting S3 image uploads for AI extracted data');
+
+      // Process main images
+      if (extractedData.images && Array.isArray(extractedData.images)) {
+        logger.info({ count: extractedData.images.length }, 'Uploading main product images');
+        const uploadedImages = await Promise.all(
+          extractedData.images.map((url: string, index: number) => {
+            logger.info({ index: index + 1, url }, 'Uploading image');
+            return this.s3Service.uploadFromUrl(url, 'products');
+          })
+        );
+        extractedData.images = uploadedImages;
+      }
+
+      // Process variant images
+      if (extractedData.variants && Array.isArray(extractedData.variants)) {
+        logger.info({ count: extractedData.variants.length }, 'Processing variant images');
+        for (let i = 0; i < extractedData.variants.length; i++) {
+          const variant = extractedData.variants[i];
+          if (variant.images && Array.isArray(variant.images)) {
+            logger.info({ variantIndex: i, count: variant.images.length }, 'Uploading variant images');
+            const uploadedVariantImages = await Promise.all(
+              variant.images.map((url: string, imgIdx: number) => {
+                logger.info({ variantIndex: i, imgIdx: imgIdx + 1 }, 'Uploading variant image');
+                return this.s3Service.uploadFromUrl(url, 'products/variants');
+              })
+            );
+            variant.images = uploadedVariantImages;
+          }
+          // Ensure default stock
+          if (typeof variant.stock !== 'number') {
+            variant.stock = 10;
+          }
+        }
+      }
+
+      logger.info('Image uploads completed');
+
+      // 6. Default values and validation
+      extractedData.status = extractedData.status || ProductStatus.DRAFT;
+
+      const { error, value } = createProductSchema.validate(extractedData, {
+        abortEarly: false,
+        allowUnknown: true
+      });
+
+      if (error) {
+        logger.warn({ validationErrors: error.details }, 'AI extracted data validation failed');
+        // We still return it but with warnings highlighted
+        return res.json(ApiResponse.success({
+          ...extractedData,
+          _validationErrors: error.details.map(d => d.message)
+        }, "Extracted with validation warnings").build());
+      }
+
+      res.json(ApiResponse.success(value, "Extracted data successfully").build());
     } catch (error) {
       next(error);
     }

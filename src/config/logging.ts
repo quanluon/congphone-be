@@ -6,17 +6,11 @@
 export const LOGGING_CONFIG = {
   // Production log levels - minimize CloudWatch costs
   production: {
-    level: 'warn', // Only log warnings and errors
-    requestSampling: 0.1, // Log only 10% of successful requests
+    level: 'info', // Increased log level to capture info
+    requestSampling: 1.0, // Log all successful requests
     errorSampling: 1.0, // Always log errors
-    slowRequestThreshold: 1000, // Log requests slower than 1s
-    skipPaths: [
-      '/health',
-      '/healthz',
-      '/static/',
-      '/favicon.ico',
-      '/robots.txt'
-    ]
+    slowRequestThreshold: 1000,
+    skipPaths: []
   },
   
   // Development log levels - full logging for debugging
@@ -31,10 +25,10 @@ export const LOGGING_CONFIG = {
   // Test log levels - minimal logging
   test: {
     level: 'error',
-    requestSampling: 0.0, // No request logging in tests
+    requestSampling: 1.0, 
     errorSampling: 1.0,
     slowRequestThreshold: 2000,
-    skipPaths: ['*'] // Skip all paths in tests
+    skipPaths: []
   }
 } as const;
 

@@ -5,6 +5,7 @@ import { authService } from "../services/auth.service";
 import { ApiError } from "../utils/ApiResponse";
 import { IUser, UserType, UserStatus } from "../models/user.model";
 import { EnvVariables } from "../config/env";
+import logger from "../utils/logger";
 
 /** Synthetic admin user injected when a valid API key is provided */
 const API_KEY_USER: IUser = {
@@ -62,7 +63,9 @@ export const optionalAuth = async (
 ) => {
   try {
     // API key takes priority over Firebase token
-    if (resolveApiKey(req)) {
+    const isApiKeyValid = resolveApiKey(req);
+    logger.info({ isApiKeyValid }, 'isApiKeyValid');
+    if (isApiKeyValid) {
       req.user = API_KEY_USER;
       return next();
     }

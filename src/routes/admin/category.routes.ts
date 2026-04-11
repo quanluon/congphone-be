@@ -2,16 +2,13 @@ import { Router } from 'express';
 import { adminCategoryController } from '../../controllers/admin/category.controller';
 import { adminOnly } from '../../middleware/auth';
 import { validate, validateRequest } from '../../middleware/validate';
-import { 
-  createCategorySchema, 
-  updateCategorySchema, 
-  listCategoriesSchema 
+import {
+  createCategorySchema,
+  updateCategorySchema,
+  listCategoriesSchema
 } from '../../validators/category.validator';
 
 const router = Router();
-
-// Apply authentication middleware to all routes
-router.use(adminOnly);
 
 // Admin category management routes
 router.post(

@@ -2,16 +2,13 @@ import { Router } from 'express';
 import { adminBrandController } from '../../controllers/admin/brand.controller';
 import { adminOnly } from '../../middleware/auth';
 import { validate, validateRequest } from '../../middleware/validate';
-import { 
-  createBrandSchema, 
-  updateBrandSchema, 
-  listBrandsSchema 
+import {
+  createBrandSchema,
+  updateBrandSchema,
+  listBrandsSchema
 } from '../../validators/brand.validator';
 
 const router = Router();
-
-// Apply authentication middleware to all routes
-router.use(adminOnly);
 
 // Admin brand management routes
 router.post(

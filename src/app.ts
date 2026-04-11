@@ -23,7 +23,7 @@ export const createApp = () => {
         callback(new Error(`Origin ${origin} is not allowed by CORS`));
       },
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization"],
+      allowedHeaders: ["Content-Type", "Authorization", "x-amz-acl", "x-api-key"],
       credentials: true,
     })
   );

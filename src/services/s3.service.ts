@@ -8,6 +8,7 @@ import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 import crypto from "crypto";
 import path from "path";
 import { EnvVariables } from "../config/env";
+import logger from "../utils/logger";
 
 export class S3Service {
   private s3Client: S3Client;
@@ -110,6 +111,39 @@ export class S3Service {
       key: destinationKey,
       publicUrl: this.getPublicUrl(destinationKey),
     };
+  }
+
+  // Upload file from a URL
+  async uploadFromUrl(url: string, folder: string = "products"): Promise<string> {
+    try {
+      const response = await fetch(url);
+      if (!response.ok) throw new Error(`Failed to fetch image: ${response.statusText}`);
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      const contentType = response.headers.get('content-type') || 'image/jpeg';
+
+      // Get filename from URL or generate one
+      const urlPath = new URL(url).pathname;
+      const originalName = path.basename(urlPath) || 'image.jpg';
+      const uniqueFileName = this.generateUniqueFileName(originalName);
+      const key = `${folder}/${uniqueFileName}`;
+
+      const command = new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: buffer,
+        ContentType: contentType,
+        ACL: "public-read",
+      });
+
+      await this.s3Client.send(command);
+      return this.getPublicUrl(key);
+    } catch (error: any) {
+      logger.error({ err: error, url }, 'Failed to upload image from URL to S3');
+      // Return original URL if upload fails to avoid breaking the flow completely
+      return url;
+    }
   }
 
   // Move multiple files from upload folder to permanent folder

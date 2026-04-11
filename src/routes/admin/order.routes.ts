@@ -12,10 +12,6 @@ import {
 const router = Router();
 const adminOrderController = new AdminOrderController();
 
-// All admin routes require authentication
-router.use(requiredAuth);
-router.use(adminOnly);
-
 // Order management routes
 router.get(
   '/',

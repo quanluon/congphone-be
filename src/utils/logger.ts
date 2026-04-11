@@ -11,14 +11,14 @@ const logger = pino({
   level: process.env.LOG_LEVEL || loggingConfig.level,
   transport: isDevelopment
     ? {
-        target: 'pino-pretty',
-        options: {
-          colorize: true,
-          translateTime: 'SYS:standard',
-          ignore: 'pid,hostname',
-          singleLine: false,
-        },
-      }
+      target: 'pino-pretty',
+      options: {
+        colorize: true,
+        translateTime: 'SYS:standard',
+        ignore: 'pid,hostname',
+        singleLine: false,
+      },
+    }
     : undefined, // In production, output raw JSON for log aggregation
   formatters: {
     level: (label) => {
@@ -44,20 +44,22 @@ export const requestLogger = (req: Request, res: Response, next: NextFunction) =
     const duration = Date.now() - start;
     const isError = res.statusCode >= 400;
     const isSlow = duration > loggingConfig.slowRequestThreshold;
-    
+
     // Use centralized configuration for logging decisions
     if (shouldLogRequest(req.path, res.statusCode, duration)) {
-      const logLevel = isError ? 'error' : 'warn';
+      const logLevel = isError ? 'error' : 'info'; // Use info for successes to ensure visibility
       const logData = {
         type: 'response',
         method: req.method,
         url: req.url,
         path: req.path,
+        query: req.query,
+        body: req.method !== 'GET' ? req.body : undefined,
         statusCode: res.statusCode,
         duration: `${duration}ms`,
         ...(isSlow && { slow: true }),
       };
-      
+
       logger[logLevel](logData, `${req.method} ${req.url} ${res.statusCode} - ${duration}ms`);
     }
   });

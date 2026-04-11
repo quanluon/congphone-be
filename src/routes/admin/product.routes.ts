@@ -14,13 +14,12 @@ import {
 const router = Router();
 const adminProductController = new AdminProductController();
 
-// Apply authentication middleware to all admin routes
-router.use(requiredAuth);
-router.use(adminOnly);
-
 // Product CRUD operations
 router.get("/", validate({ query: listProductsSchema }), adminProductController.getProducts.bind(adminProductController));
 router.get("/stats", adminProductController.getProductStats.bind(adminProductController));
+// AI extraction
+router.post("/ai-extract", adminProductController.aiExtractProduct.bind(adminProductController));
+
 router.get("/:id", adminProductController.getProductById.bind(adminProductController));
 router.post("/", validateRequest(createProductSchema), adminProductController.createProduct.bind(adminProductController));
 router.put("/:id", validateRequest(updateProductSchema), adminProductController.updateProduct.bind(adminProductController));
