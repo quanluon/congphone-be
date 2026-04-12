@@ -36,7 +36,7 @@ export class S3Service {
 
   constructor() {
     this.s3Client = new S3Client({
-      region: EnvVariables.AWS_REGION!,
+      region: EnvVariables.AWS_REGION || "ap-southeast-1",
       credentials: {
         accessKeyId: EnvVariables.AWS_ACCESS_KEY_ID!,
         secretAccessKey: EnvVariables.AWS_SECRET_ACCESS_KEY!,
@@ -369,8 +369,7 @@ export class S3Service {
       return this.persistPreparedImageSource(prepared, folder);
     } catch (error: any) {
       logger.error({ err: error, url }, 'Failed to upload image from URL to S3');
-      // Return original URL if upload fails to avoid breaking the flow completely
-      return url;
+      throw error;
     }
   }
 
