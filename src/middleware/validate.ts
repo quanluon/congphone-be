@@ -10,11 +10,14 @@ type ValidationSchema = {
   [key in ValidationType]?: Schema;
 };
 
-export const validate = (schemas: ValidationSchema) => {
+type ValidateOptions = ValidationOptions;
+
+export const validate = (schemas: ValidationSchema, options?: ValidateOptions) => {
   return (req: Request, res: Response, next: NextFunction) => {
     const validationOptions: ValidationOptions = {
       abortEarly: false,
       allowUnknown: true,
+      ...options,
     };
 
     try {
@@ -61,8 +64,8 @@ export const validate = (schemas: ValidationSchema) => {
 };
 
 // Legacy support for old validateRequest function
-export const validateRequest = (schema: Schema) => {
+export const validateRequest = (schema: Schema, options?: ValidateOptions) => {
   return validate({
     body: schema,
-  });
+  }, options);
 };

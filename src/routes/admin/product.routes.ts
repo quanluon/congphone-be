@@ -21,8 +21,16 @@ router.get("/stats", adminProductController.getProductStats.bind(adminProductCon
 router.post("/ai-extract", adminProductController.aiExtractProduct.bind(adminProductController));
 
 router.get("/:id", adminProductController.getProductById.bind(adminProductController));
-router.post("/", validateRequest(createProductSchema), adminProductController.createProduct.bind(adminProductController));
-router.put("/:id", validateRequest(updateProductSchema), adminProductController.updateProduct.bind(adminProductController));
+router.post(
+  "/",
+  validateRequest(createProductSchema, { allowUnknown: false, stripUnknown: true }),
+  adminProductController.createProduct.bind(adminProductController),
+);
+router.put(
+  "/:id",
+  validateRequest(updateProductSchema, { allowUnknown: false, stripUnknown: true }),
+  adminProductController.updateProduct.bind(adminProductController),
+);
 router.delete("/:id", adminProductController.deleteProduct.bind(adminProductController));
 router.delete("/:id/hard", adminProductController.hardDeleteProduct.bind(adminProductController));
 

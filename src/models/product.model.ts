@@ -37,6 +37,9 @@ export interface IProductVariant {
   images: string[];
   attributes: IProductAttribute[]; // Structured attributes for variant-specific specs
   isActive: boolean;
+  provider?: string;
+  sourceUrl?: string;
+  externalId?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -47,6 +50,16 @@ export interface IProductAttribute {
   value: string;
   unit?: string;
   category?: string; // e.g., "Display", "Performance", "Camera", etc.
+}
+
+export interface IProductSource {
+  provider: string;
+  url: string;
+  externalId?: string;
+  categoryKey: string;
+  groupKey?: string;
+  memberUrls?: string[];
+  lastCrawledAt: Date;
 }
 
 export interface IProduct {
@@ -64,6 +77,7 @@ export interface IProduct {
   images: string[]; // Main product images
   features: string[]; // Key features array
   attributes: IProductAttribute[]; // Structured attributes
+  source?: IProductSource;
   status: ProductStatus;
   isFeatured: boolean;
   isNew: boolean;
@@ -160,6 +174,18 @@ const productVariantSchema = new mongoose.Schema<IProductVariant>(
       type: Boolean,
       default: true,
     },
+    provider: {
+      type: String,
+      trim: true,
+    },
+    sourceUrl: {
+      type: String,
+      trim: true,
+    },
+    externalId: {
+      type: String,
+      trim: true,
+    },
   },
   {
     timestamps: true,
@@ -251,6 +277,37 @@ const productSchema = new mongoose.Schema<IProduct>(
         }
       },
     ],
+    source: {
+      provider: {
+        type: String,
+        trim: true,
+      },
+      url: {
+        type: String,
+        trim: true,
+      },
+      externalId: {
+        type: String,
+        trim: true,
+      },
+      categoryKey: {
+        type: String,
+        trim: true,
+      },
+      groupKey: {
+        type: String,
+        trim: true,
+      },
+      memberUrls: [
+        {
+          type: String,
+          trim: true,
+        },
+      ],
+      lastCrawledAt: {
+        type: Date,
+      },
+    },
     status: {
       type: String,
       enum: ProductStatus,
@@ -345,6 +402,13 @@ productSchema.index({ isFeatured: 1 });
 productSchema.index({ isNew: 1 });
 productSchema.index({ basePrice: 1 });
 productSchema.index({ slug: 1 });
+productSchema.index(
+  { "source.provider": 1, "source.groupKey": 1 },
+  {
+    unique: true,
+    sparse: true,
+  },
+);
 
 // Index for variants
 productSchema.index({ "variants.color": 1 });

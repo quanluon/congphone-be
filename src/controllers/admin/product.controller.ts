@@ -1,5 +1,10 @@
 import { NextFunction, Request, Response } from "express";
-import { IProductVariant, Product, ProductStatus } from "../../models/product.model";
+import {
+  IProductVariant,
+  Product,
+  ProductAttributeType,
+  ProductStatus,
+} from "../../models/product.model";
 import { ProductService } from "../../services/product.service";
 import { S3Service } from "../../services/s3.service";
 import { ApiError, ApiResponse } from "../../utils/ApiResponse";
@@ -9,12 +14,256 @@ import { aiService } from "../../services/ai.service";
 import { crawler } from "../../utils/crawler";
 import { Category } from "../../models/category.model";
 import { Brand } from "../../models/brand.model";
-import { createProductSchema } from "../../validators/admin/product.validator";
+import { createProductSchema, updateProductSchema } from "../../validators/admin/product.validator";
 import type { PreparedImageSource } from "../../services/s3.service";
 
 export class AdminProductController {
   private productService = new ProductService();
   private s3Service = new S3Service();
+  private readonly FEATURE_MAX_LENGTH = 200;
+  private readonly TAG_MAX_LENGTH = 50;
+  private readonly ATTRIBUTE_NAME_MAX_LENGTH = 100;
+  private readonly ATTRIBUTE_VALUE_MAX_LENGTH = 200;
+  private readonly ATTRIBUTE_UNIT_MAX_LENGTH = 20;
+  private readonly ATTRIBUTE_CATEGORY_MAX_LENGTH = 50;
+  private readonly VARIANT_NAME_MAX_LENGTH = 200;
+  private readonly VARIANT_COLOR_MAX_LENGTH = 50;
+  private readonly VARIANT_META_MAX_LENGTH = 50;
+
+  private sanitizeText(value: unknown, maxLength?: number) {
+    if (typeof value !== "string") {
+      return "";
+    }
+
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return "";
+    }
+
+    if (!maxLength || trimmed.length <= maxLength) {
+      return trimmed;
+    }
+
+    return trimmed.slice(0, maxLength).trim();
+  }
+
+  private sanitizeStringArray(value: unknown, maxLength?: number): string[] {
+    if (!Array.isArray(value)) {
+      return [];
+    }
+
+    return [...new Set(value
+      .map((item) => this.sanitizeText(item, maxLength))
+      .filter(Boolean))];
+  }
+
+  private normalizeAttribute(attribute: any) {
+    return {
+      name: this.sanitizeText(attribute?.name, this.ATTRIBUTE_NAME_MAX_LENGTH),
+      value: this.sanitizeText(attribute?.value, this.ATTRIBUTE_VALUE_MAX_LENGTH),
+      unit: this.sanitizeText(attribute?.unit, this.ATTRIBUTE_UNIT_MAX_LENGTH) || "",
+      category: this.sanitizeText(attribute?.category, this.ATTRIBUTE_CATEGORY_MAX_LENGTH) || undefined,
+      type: typeof attribute?.type === "string" && Object.values(ProductAttributeType).includes(attribute.type)
+        ? attribute.type
+        : ProductAttributeType.CUSTOM,
+    };
+  }
+
+  private normalizeProductPayload(productData: any, mode: "create" | "update") {
+    const normalizedData = { ...productData };
+
+    const normalizeOptionalString = (value: unknown) => {
+      if (typeof value !== "string") {
+        return null;
+      }
+      const trimmed = value.trim();
+      return trimmed || null;
+    };
+
+    if ("name" in normalizedData && typeof normalizedData.name === "string") {
+      normalizedData.name = normalizedData.name.trim();
+    }
+
+    if ("description" in normalizedData && typeof normalizedData.description === "string") {
+      normalizedData.description = normalizedData.description.trim();
+    }
+
+    if ("shortDescription" in normalizedData) {
+      normalizedData.shortDescription = normalizeOptionalString(normalizedData.shortDescription);
+    }
+
+    if ("metaTitle" in normalizedData) {
+      normalizedData.metaTitle = typeof normalizedData.metaTitle === "string"
+        ? normalizedData.metaTitle.trim()
+        : "";
+    }
+
+    if ("metaDescription" in normalizedData) {
+      normalizedData.metaDescription = typeof normalizedData.metaDescription === "string"
+        ? normalizedData.metaDescription.trim()
+        : "";
+    }
+
+    if ("productType" in normalizedData && typeof normalizedData.productType === "string") {
+      normalizedData.productType = normalizedData.productType.toLowerCase();
+    }
+
+    if ("images" in normalizedData) {
+      normalizedData.images = this.sanitizeStringArray(normalizedData.images);
+    }
+
+    if ("features" in normalizedData) {
+      normalizedData.features = this.sanitizeStringArray(
+        normalizedData.features,
+        this.FEATURE_MAX_LENGTH,
+      );
+    }
+
+    if ("tags" in normalizedData) {
+      normalizedData.tags = this.sanitizeStringArray(
+        normalizedData.tags,
+        this.TAG_MAX_LENGTH,
+      );
+    }
+
+    if (Array.isArray(normalizedData.attributes)) {
+      normalizedData.attributes = normalizedData.attributes
+        .map((attribute: any) => this.normalizeAttribute(attribute))
+        .filter((attribute: any) => attribute.name && attribute.value);
+    }
+
+    if (Array.isArray(normalizedData.variants)) {
+      normalizedData.variants = normalizedData.variants.map((variant: any) => ({
+        name: this.sanitizeText(variant?.name, this.VARIANT_NAME_MAX_LENGTH),
+        color: this.sanitizeText(variant?.color, this.VARIANT_COLOR_MAX_LENGTH),
+        colorCode: typeof variant?.colorCode === "string" ? variant.colorCode.trim() : "",
+        storage: normalizeOptionalString(this.sanitizeText(variant?.storage, this.VARIANT_META_MAX_LENGTH)),
+        size: normalizeOptionalString(this.sanitizeText(variant?.size, this.VARIANT_META_MAX_LENGTH)),
+        connectivity: normalizeOptionalString(this.sanitizeText(variant?.connectivity, this.VARIANT_META_MAX_LENGTH)),
+        simType: normalizeOptionalString(this.sanitizeText(variant?.simType, this.VARIANT_META_MAX_LENGTH)),
+        price: typeof variant?.price === "number" ? variant.price : Number(variant?.price ?? 0),
+        originalPrice:
+          variant?.originalPrice === null || variant?.originalPrice === undefined || variant?.originalPrice === ""
+            ? null
+            : Number(variant.originalPrice),
+        stock:
+          typeof variant?.stock === "number"
+            ? variant.stock
+            : Number.isFinite(Number(variant?.stock))
+              ? Number(variant.stock)
+              : 10,
+        images: this.sanitizeStringArray(variant?.images),
+        attributes: Array.isArray(variant?.attributes)
+          ? variant.attributes
+              .map((attribute: any) => this.normalizeAttribute(attribute))
+              .filter((attribute: any) => attribute.name && attribute.value)
+          : [],
+        isActive: typeof variant?.isActive === "boolean" ? variant.isActive : true,
+      }));
+    }
+
+    if (Array.isArray(normalizedData.variants) && normalizedData.variants.length > 0) {
+      const variantPrices = normalizedData.variants
+        .map((variant: any) => variant.price)
+        .filter((price: number) => Number.isFinite(price) && price >= 0);
+
+      if (variantPrices.length > 0) {
+        normalizedData.basePrice = Math.min(...variantPrices);
+      }
+
+      const variantOriginalPrices = normalizedData.variants
+        .map((variant: any) => variant.originalPrice)
+        .filter((price: number | null) => typeof price === "number" && Number.isFinite(price) && price > 0);
+
+      if (variantOriginalPrices.length > 0 && !("originalBasePrice" in normalizedData)) {
+        normalizedData.originalBasePrice = Math.max(...variantOriginalPrices);
+      }
+    }
+
+    if ("originalBasePrice" in normalizedData) {
+      normalizedData.originalBasePrice =
+        normalizedData.originalBasePrice === null ||
+        normalizedData.originalBasePrice === undefined ||
+        normalizedData.originalBasePrice === ""
+          ? null
+          : Number(normalizedData.originalBasePrice);
+    }
+
+    if ("slug" in normalizedData) {
+      delete normalizedData.slug;
+    }
+
+    if (mode === "create" && !("status" in normalizedData)) {
+      normalizedData.status = ProductStatus.DRAFT;
+    }
+
+    return normalizedData;
+  }
+
+  private validateNormalizedProductPayload(productData: any, mode: "create" | "update") {
+    const schema = mode === "create" ? createProductSchema : updateProductSchema;
+    const { error, value } = schema.validate(productData, {
+      abortEarly: false,
+      allowUnknown: false,
+      stripUnknown: true,
+    });
+
+    if (error) {
+      throw new ApiError(
+        400,
+        "Validation Error",
+        error.details.map((detail) => ({
+          field: detail.path.join("."),
+          message: detail.message,
+        })),
+        "validationError",
+      );
+    }
+
+    return value;
+  }
+
+  private async cloneImagesToS3(
+    sourceUrls: unknown,
+    folder: string,
+    options?: {
+      maxPreparedCount?: number;
+    },
+  ) {
+    const sanitizedSourceUrls = this.sanitizeStringArray(sourceUrls);
+    if (sanitizedSourceUrls.length === 0) {
+      return [];
+    }
+
+    const managedUrls = sanitizedSourceUrls.filter((sourceUrl) => this.s3Service.isManagedUrl(sourceUrl));
+    const remoteUrls = sanitizedSourceUrls.filter((sourceUrl) => !this.s3Service.isManagedUrl(sourceUrl));
+
+    const [managedResults, preparedRemoteImages] = await Promise.all([
+      managedUrls.length > 0
+        ? this.s3Service.persistImageSources(managedUrls, folder)
+        : Promise.resolve([]),
+      remoteUrls.length > 0
+        ? this.s3Service.prepareImageSources(remoteUrls)
+        : Promise.resolve([]),
+    ]);
+
+    const selectedPreparedRemoteImages = this.keepBestPreparedImages(
+      preparedRemoteImages,
+      options?.maxPreparedCount,
+    );
+
+    const remoteResults = selectedPreparedRemoteImages.length > 0
+      ? await this.s3Service.persistPreparedImageSources(selectedPreparedRemoteImages, folder)
+      : [];
+
+    const persistedUrls = [...new Set([...managedResults, ...remoteResults])];
+
+    if (sanitizedSourceUrls.length > 0 && persistedUrls.length === 0) {
+      throw new Error(`No valid images could be cloned to S3 for folder=${folder}`);
+    }
+
+    return persistedUrls;
+  }
 
   private logDuration(
     requestStartedAt: number,
@@ -66,7 +315,7 @@ export class AdminProductController {
     // Process main product images
     if (processedData.images?.length) {
       try {
-        processedData.images = await this.s3Service.persistImageSources(
+        processedData.images = await this.cloneImagesToS3(
           processedData.images,
           'products',
         );
@@ -82,9 +331,10 @@ export class AdminProductController {
         const variant = processedData.variants[i];
         if (variant.images?.length) {
           try {
-            variant.images = await this.s3Service.persistImageSources(
+            variant.images = await this.cloneImagesToS3(
               variant.images,
               'products/variants',
+              { maxPreparedCount: 1 },
             );
           } catch (error) {
             logger.error({ err: error, variantIndex: i }, `Error moving variant ${i} images`);
@@ -177,16 +427,12 @@ export class AdminProductController {
   // Create new product
   async createProduct(req: Request, res: Response, next: NextFunction) {
     try {
-      let productData = req.body;
+      let productData = this.normalizeProductPayload(req.body, "create");
 
       // Process uploaded files and move them to permanent storage
       productData = await this.processUploadedFiles(productData);
-
-      // Calculate base price from variants
-      if (productData.variants && productData.variants.length > 0) {
-        const prices = productData.variants.map((v: IProductVariant) => v.price);
-        productData.basePrice = Math.min(...prices);
-      }
+      productData = this.normalizeProductPayload(productData, "create");
+      productData = this.validateNormalizedProductPayload(productData, "create");
 
       const product = await this.productService.createProduct(productData);
 
@@ -205,16 +451,12 @@ export class AdminProductController {
   async updateProduct(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      let updateData = req.body;
+      let updateData = this.normalizeProductPayload(req.body, "update");
 
       // Process uploaded files and move them to permanent storage
       updateData = await this.processUploadedFiles(updateData);
-
-      // Recalculate base price if variants are updated
-      if (updateData.variants?.length) {
-        const prices = updateData.variants.map((v: IProductVariant) => v.price);
-        updateData.basePrice = Math.min(...prices);
-      }
+      updateData = this.normalizeProductPayload(updateData, "update");
+      updateData = this.validateNormalizedProductPayload(updateData, "update");
 
       const product = await this.productService.updateProduct(id, updateData);
 
@@ -600,42 +842,29 @@ export class AdminProductController {
       this.logDuration(requestStartedAt, matchMetaStartedAt, 'matchMetaMs');
 
       // 4. Normalize extracted values
-      // Normalize productType to lowercase to match enum
-      if (extractedData.productType) {
-        extractedData.productType = extractedData.productType.toLowerCase();
-      }
-
-      if (extractedData.variants && Array.isArray(extractedData.variants)) {
-        for (let i = 0; i < extractedData.variants.length; i++) {
-          const variant = extractedData.variants[i];
-          // Ensure default stock
-          if (typeof variant.stock !== 'number') {
-            variant.stock = 10;
-          }
-        }
-      }
+      const normalizedExtractedData = this.normalizeProductPayload(extractedData, "create");
 
       // 5. Upload extracted images to S3 in parallel
       const uploadImagesStartedAt = Date.now();
-      const mainPreparedImages = Array.isArray(extractedData.images)
+      const mainPreparedImages = Array.isArray(normalizedExtractedData.images)
         ? this.keepBestPreparedImages(
-            await this.s3Service.prepareImageSources(extractedData.images),
+            await this.s3Service.prepareImageSources(normalizedExtractedData.images),
           )
         : [];
       const fallbackMainImage = mainPreparedImages[0];
 
       if (mainPreparedImages.length > 0) {
-        extractedData.images = await this.s3Service.persistPreparedImageSources(
+        normalizedExtractedData.images = await this.s3Service.persistPreparedImageSources(
           mainPreparedImages,
           "products",
         );
       } else {
-        extractedData.images = [];
+        normalizedExtractedData.images = [];
       }
 
-      if (extractedData.variants && Array.isArray(extractedData.variants)) {
+      if (normalizedExtractedData.variants && Array.isArray(normalizedExtractedData.variants)) {
         await Promise.all(
-          extractedData.variants.map(async (variant: any) => {
+          normalizedExtractedData.variants.map(async (variant: any) => {
             const variantPreparedImages = Array.isArray(variant.images)
               ? this.keepBestPreparedImages(
                   await this.s3Service.prepareImageSources(variant.images),
@@ -665,11 +894,11 @@ export class AdminProductController {
       }
 
       this.logDuration(requestStartedAt, uploadImagesStartedAt, 'uploadImagesMs', {
-        mainImageCount: extractedData.images?.length ?? 0,
+        mainImageCount: normalizedExtractedData.images?.length ?? 0,
         mainPreparedImageCount: mainPreparedImages.length,
         bestMainImageQualityScore: fallbackMainImage?.qualityScore ?? null,
-        variantImageCount: Array.isArray(extractedData.variants)
-          ? extractedData.variants.reduce(
+        variantImageCount: Array.isArray(normalizedExtractedData.variants)
+          ? normalizedExtractedData.variants.reduce(
               (total: number, variant: any) =>
                 total + (Array.isArray(variant.images) ? variant.images.length : 0),
               0,
@@ -679,11 +908,11 @@ export class AdminProductController {
 
       // 6. Default values and validation
       const validationStartedAt = Date.now();
-      extractedData.status = extractedData.status || ProductStatus.DRAFT;
-
-      const { error, value } = createProductSchema.validate(extractedData, {
+      const finalExtractedData = this.normalizeProductPayload(normalizedExtractedData, "create");
+      const { error, value } = createProductSchema.validate(finalExtractedData, {
         abortEarly: false,
-        allowUnknown: true
+        allowUnknown: false,
+        stripUnknown: true,
       });
       this.logDuration(requestStartedAt, validationStartedAt, 'validationMs', {
         validationFailed: Boolean(error),
@@ -693,7 +922,7 @@ export class AdminProductController {
         logger.warn({ validationErrors: error.details }, 'AI extracted data validation failed');
         // We still return it but with warnings highlighted
         return res.json(ApiResponse.success({
-          ...extractedData,
+          ...finalExtractedData,
           _validationErrors: error.details.map(d => d.message)
         }, "Extracted with validation warnings").build());
       }
