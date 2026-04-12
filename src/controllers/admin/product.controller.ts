@@ -20,15 +20,6 @@ import type { PreparedImageSource } from "../../services/s3.service";
 export class AdminProductController {
   private productService = new ProductService();
   private s3Service = new S3Service();
-  private readonly FEATURE_MAX_LENGTH = 200;
-  private readonly TAG_MAX_LENGTH = 50;
-  private readonly ATTRIBUTE_NAME_MAX_LENGTH = 100;
-  private readonly ATTRIBUTE_VALUE_MAX_LENGTH = 200;
-  private readonly ATTRIBUTE_UNIT_MAX_LENGTH = 20;
-  private readonly ATTRIBUTE_CATEGORY_MAX_LENGTH = 50;
-  private readonly VARIANT_NAME_MAX_LENGTH = 200;
-  private readonly VARIANT_COLOR_MAX_LENGTH = 50;
-  private readonly VARIANT_META_MAX_LENGTH = 50;
 
   private sanitizeText(value: unknown, maxLength?: number) {
     if (typeof value !== "string") {
@@ -59,10 +50,10 @@ export class AdminProductController {
 
   private normalizeAttribute(attribute: any) {
     return {
-      name: this.sanitizeText(attribute?.name, this.ATTRIBUTE_NAME_MAX_LENGTH),
-      value: this.sanitizeText(attribute?.value, this.ATTRIBUTE_VALUE_MAX_LENGTH),
-      unit: this.sanitizeText(attribute?.unit, this.ATTRIBUTE_UNIT_MAX_LENGTH) || "",
-      category: this.sanitizeText(attribute?.category, this.ATTRIBUTE_CATEGORY_MAX_LENGTH) || undefined,
+      name: this.sanitizeText(attribute?.name),
+      value: this.sanitizeText(attribute?.value),
+      unit: this.sanitizeText(attribute?.unit) || "",
+      category: this.sanitizeText(attribute?.category) || undefined,
       type: typeof attribute?.type === "string" && Object.values(ProductAttributeType).includes(attribute.type)
         ? attribute.type
         : ProductAttributeType.CUSTOM,
@@ -113,17 +104,11 @@ export class AdminProductController {
     }
 
     if ("features" in normalizedData) {
-      normalizedData.features = this.sanitizeStringArray(
-        normalizedData.features,
-        this.FEATURE_MAX_LENGTH,
-      );
+      normalizedData.features = this.sanitizeStringArray(normalizedData.features);
     }
 
     if ("tags" in normalizedData) {
-      normalizedData.tags = this.sanitizeStringArray(
-        normalizedData.tags,
-        this.TAG_MAX_LENGTH,
-      );
+      normalizedData.tags = this.sanitizeStringArray(normalizedData.tags);
     }
 
     if (Array.isArray(normalizedData.attributes)) {
@@ -134,13 +119,13 @@ export class AdminProductController {
 
     if (Array.isArray(normalizedData.variants)) {
       normalizedData.variants = normalizedData.variants.map((variant: any) => ({
-        name: this.sanitizeText(variant?.name, this.VARIANT_NAME_MAX_LENGTH),
-        color: this.sanitizeText(variant?.color, this.VARIANT_COLOR_MAX_LENGTH),
+        name: this.sanitizeText(variant?.name),
+        color: this.sanitizeText(variant?.color),
         colorCode: typeof variant?.colorCode === "string" ? variant.colorCode.trim() : "",
-        storage: normalizeOptionalString(this.sanitizeText(variant?.storage, this.VARIANT_META_MAX_LENGTH)),
-        size: normalizeOptionalString(this.sanitizeText(variant?.size, this.VARIANT_META_MAX_LENGTH)),
-        connectivity: normalizeOptionalString(this.sanitizeText(variant?.connectivity, this.VARIANT_META_MAX_LENGTH)),
-        simType: normalizeOptionalString(this.sanitizeText(variant?.simType, this.VARIANT_META_MAX_LENGTH)),
+        storage: normalizeOptionalString(this.sanitizeText(variant?.storage)),
+        size: normalizeOptionalString(this.sanitizeText(variant?.size)),
+        connectivity: normalizeOptionalString(this.sanitizeText(variant?.connectivity)),
+        simType: normalizeOptionalString(this.sanitizeText(variant?.simType)),
         price: typeof variant?.price === "number" ? variant.price : Number(variant?.price ?? 0),
         originalPrice:
           variant?.originalPrice === null || variant?.originalPrice === undefined || variant?.originalPrice === ""

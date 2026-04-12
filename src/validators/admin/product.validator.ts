@@ -3,23 +3,23 @@ import { ProductAttributeType, ProductStatus, ProductType } from '../../models/p
 
 // Product variant schema
 const productVariantSchema = Joi.object({
-  name: Joi.string().required().trim().min(1).max(200),
-  color: Joi.string().required().trim().min(1).max(50),
+  name: Joi.string().required().trim(),
+  color: Joi.string().required().trim(),
   colorCode: Joi.string().required().trim().pattern(/^#[0-9A-Fa-f]{6}$/),
-  storage: Joi.string().trim().max(50).optional().allow(null),
-  size: Joi.string().trim().max(50).optional().allow(null),
-  connectivity: Joi.string().trim().max(50).optional().allow(null),
-  simType: Joi.string().trim().max(50).optional().allow(null),
+  storage: Joi.string().trim().optional().allow(null),
+  size: Joi.string().trim().optional().allow(null),
+  connectivity: Joi.string().trim().optional().allow(null),
+  simType: Joi.string().trim().optional().allow(null),
   price: Joi.number().required().min(0),
   originalPrice: Joi.number().min(0).optional().allow(null),
   stock: Joi.number().required().min(0),
   images: Joi.array().items(Joi.string().uri()).optional().allow(null),
   attributes: Joi.array().items(
     Joi.object({
-      name: Joi.string().required().trim().min(1).max(100),
-      value: Joi.string().required().trim().min(1).max(200),
-      unit: Joi.string().trim().max(20).optional().allow(""),
-      category: Joi.string().trim().max(50).optional()
+      name: Joi.string().required().trim(),
+      value: Joi.string().required().trim(),
+      unit: Joi.string().trim().optional().allow(""),
+      category: Joi.string().trim().optional()
     })
   ).optional(),
   isActive: Joi.boolean().optional().default(true)
@@ -27,17 +27,17 @@ const productVariantSchema = Joi.object({
 
 // Product attribute schema
 const productAttributeSchema = Joi.object({
-  name: Joi.string().required().trim().min(1).max(100),
-  value: Joi.string().required().trim().min(1).max(200),
-  unit: Joi.string().trim().max(20).optional().allow(""),
-  category: Joi.string().trim().max(50).optional(),
+  name: Joi.string().required().trim(),
+  value: Joi.string().required().trim(),
+  unit: Joi.string().trim().optional().allow(""),
+  category: Joi.string().trim().optional(),
   type: Joi.string().valid(...Object.values(ProductAttributeType)).optional().default(ProductAttributeType.CUSTOM).allow("")
 });
 
 // Base product schema
 const productBaseSchema = {
-  name: Joi.string().trim().min(2).max(200),
-  description: Joi.string().trim().min(10),
+  name: Joi.string().trim(),
+  description: Joi.string().trim(),
   shortDescription: Joi.string().trim().optional().allow(null),
   category: Joi.string().pattern(/^[0-9a-fA-F]{24}$/),
   brand: Joi.string().pattern(/^[0-9a-fA-F]{24}$/),
@@ -46,13 +46,13 @@ const productBaseSchema = {
   basePrice: Joi.number().min(0),
   originalBasePrice: Joi.number().min(0).optional().allow(null),
   images: Joi.array().items(Joi.string().uri()).optional(),
-  features: Joi.array().items(Joi.string().trim().max(200)),
+  features: Joi.array().items(Joi.string().trim()),
   attributes: Joi.array().items(productAttributeSchema),
   status: Joi.string().valid(...Object.values(ProductStatus)),
   isFeatured: Joi.boolean(),
   isNew: Joi.boolean(),
-  tags: Joi.array().items(Joi.string().trim().max(50)),
-  metaTitle: Joi.string().trim().max(200).allow('').optional(),
+  tags: Joi.array().items(Joi.string().trim()),
+  metaTitle: Joi.string().trim().allow('').optional(),
   metaDescription: Joi.string().trim().allow('').optional()
 };
 
@@ -96,7 +96,7 @@ export const listProductsSchema = Joi.object({
 
 // Bulk update schema
 export const bulkUpdateSchema = Joi.object({
-  productIds: Joi.array().items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/)).min(1).max(100).required(),
+  productIds: Joi.array().items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/)).required(),
   updateData: Joi.object({
     status: Joi.string().valid(...Object.values(ProductStatus)).optional(),
     isFeatured: Joi.boolean().optional(),
@@ -108,7 +108,7 @@ export const bulkUpdateSchema = Joi.object({
 
 // Bulk delete schema
 export const bulkDeleteSchema = Joi.object({
-  productIds: Joi.array().items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/)).min(1).max(100).required()
+  productIds: Joi.array().items(Joi.string().pattern(/^[0-9a-fA-F]{24}$/)).required()
 });
 
 // Update status schema
