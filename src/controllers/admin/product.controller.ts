@@ -99,6 +99,18 @@ export class AdminProductController {
       normalizedData.productType = normalizedData.productType.toLowerCase();
     }
 
+    if ("isFeatured" in normalizedData) {
+      normalizedData.isFeatured = Boolean(normalizedData.isFeatured);
+    }
+
+    if ("isNew" in normalizedData) {
+      normalizedData.isNew = Boolean(normalizedData.isNew);
+    }
+
+    if ("isHiddenPrice" in normalizedData) {
+      normalizedData.isHiddenPrice = Boolean(normalizedData.isHiddenPrice);
+    }
+
     if ("images" in normalizedData) {
       normalizedData.images = this.sanitizeStringArray(normalizedData.images);
     }
@@ -180,6 +192,10 @@ export class AdminProductController {
 
     if (mode === "create" && !("status" in normalizedData)) {
       normalizedData.status = ProductStatus.DRAFT;
+    }
+
+    if (mode === "create" && !("isHiddenPrice" in normalizedData)) {
+      normalizedData.isHiddenPrice = false;
     }
 
     return normalizedData;

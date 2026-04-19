@@ -51,6 +51,7 @@ const productBaseSchema = {
   status: Joi.string().valid(...Object.values(ProductStatus)),
   isFeatured: Joi.boolean(),
   isNew: Joi.boolean(),
+  isHiddenPrice: Joi.boolean(),
   tags: Joi.array().items(Joi.string().trim()),
   metaTitle: Joi.string().trim().allow('').optional(),
   metaDescription: Joi.string().trim().allow('').optional()
@@ -101,6 +102,7 @@ export const bulkUpdateSchema = Joi.object({
     status: Joi.string().valid(...Object.values(ProductStatus)).optional(),
     isFeatured: Joi.boolean().optional(),
     isNew: Joi.boolean().optional(),
+    isHiddenPrice: Joi.boolean().optional(),
     category: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional(),
     brand: Joi.string().pattern(/^[0-9a-fA-F]{24}$/).optional()
   }).min(1).required()

@@ -81,6 +81,7 @@ export interface IProduct {
   status: ProductStatus;
   isFeatured: boolean;
   isNew: boolean;
+  isHiddenPrice: boolean;
   tags: string[]; // For filtering and search
   metaTitle?: string;
   metaDescription?: string;
@@ -318,6 +319,10 @@ const productSchema = new mongoose.Schema<IProduct>(
       default: false,
     },
     isNew: {
+      type: Boolean,
+      default: false,
+    },
+    isHiddenPrice: {
       type: Boolean,
       default: false,
     },
