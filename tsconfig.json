@@ -25,5 +25,5 @@
     "noUnusedParameters": false
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", ".serverless", ".build", "**/*.test.ts"]
+  "exclude": ["node_modules", ".build", "**/*.test.ts"]
 }

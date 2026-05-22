@@ -7,11 +7,7 @@ const buildTarget = process.env.BUILD_TARGET || 'all';
 const entryPointsByTarget = {
   all: {
     app: 'src/app.ts',
-    handler: 'src/handler.ts',
     vercel: 'src/vercel.ts',
-  },
-  lambda: {
-    handler: 'src/handler.ts',
   },
   vercel: {
     app: 'src/app.ts',
@@ -33,9 +29,6 @@ const config = {
   format: 'cjs',
   outdir: 'dist',
   external: [
-    // AWS SDK is provided by Lambda runtime
-    'aws-sdk',
-    '@aws-sdk/*',
     // Keep these external for better performance
     'mongoose',
     'express',
@@ -47,7 +40,6 @@ const config = {
     'pino-pretty',
     'winston',
     'dotenv',
-    'serverless-http',
     'express-validator',
     'jose'
   ],
@@ -60,7 +52,7 @@ const config = {
   },
   metafile: true,
   logLevel: 'info',
-  // Optimize for Node serverless runtimes
+  // Optimize for the Vercel Node runtime
   mainFields: ['main', 'module'],
   conditions: ['node'],
   // Remove unused code

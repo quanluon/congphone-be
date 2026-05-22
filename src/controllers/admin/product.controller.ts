@@ -6,7 +6,7 @@ import {
   ProductStatus,
 } from "../../models/product.model";
 import { ProductService } from "../../services/product.service";
-import { S3Service } from "../../services/s3.service";
+import { StorageService } from "../../services/storage.service";
 import { ApiError, ApiResponse } from "../../utils/ApiResponse";
 import { paginate } from "../../utils/pagination";
 import logger from "../../utils/logger";
@@ -15,11 +15,11 @@ import { crawler } from "../../utils/crawler";
 import { Category } from "../../models/category.model";
 import { Brand } from "../../models/brand.model";
 import { createProductSchema, updateProductSchema } from "../../validators/admin/product.validator";
-import type { PreparedImageSource } from "../../services/s3.service";
+import type { PreparedImageSource } from "../../services/storage.service";
 
 export class AdminProductController {
   private productService = new ProductService();
-  private s3Service = new S3Service();
+  private storageService = new StorageService();
 
   private sanitizeText(value: unknown, maxLength?: number) {
     if (typeof value !== "string") {
@@ -224,7 +224,7 @@ export class AdminProductController {
     return value;
   }
 
-  private async cloneImagesToS3(
+  private async cloneImagesToStorage(
     sourceUrls: unknown,
     folder: string,
     options?: {
@@ -236,15 +236,15 @@ export class AdminProductController {
       return [];
     }
 
-    const managedUrls = sanitizedSourceUrls.filter((sourceUrl) => this.s3Service.isManagedUrl(sourceUrl));
-    const remoteUrls = sanitizedSourceUrls.filter((sourceUrl) => !this.s3Service.isManagedUrl(sourceUrl));
+    const managedUrls = sanitizedSourceUrls.filter((sourceUrl) => this.storageService.isManagedUrl(sourceUrl));
+    const remoteUrls = sanitizedSourceUrls.filter((sourceUrl) => !this.storageService.isManagedUrl(sourceUrl));
 
     const [managedResults, preparedRemoteImages] = await Promise.all([
       managedUrls.length > 0
-        ? this.s3Service.persistImageSources(managedUrls, folder)
+        ? this.storageService.persistImageSources(managedUrls, folder)
         : Promise.resolve([]),
       remoteUrls.length > 0
-        ? this.s3Service.prepareImageSources(remoteUrls)
+        ? this.storageService.prepareImageSources(remoteUrls)
         : Promise.resolve([]),
     ]);
 
@@ -254,13 +254,13 @@ export class AdminProductController {
     );
 
     const remoteResults = selectedPreparedRemoteImages.length > 0
-      ? await this.s3Service.persistPreparedImageSources(selectedPreparedRemoteImages, folder)
+      ? await this.storageService.persistPreparedImageSources(selectedPreparedRemoteImages, folder)
       : [];
 
     const persistedUrls = [...new Set([...managedResults, ...remoteResults])];
 
     if (sanitizedSourceUrls.length > 0 && persistedUrls.length === 0) {
-      throw new Error(`No valid images could be cloned to S3 for folder=${folder}`);
+      throw new Error(`No valid images could be cloned to storage for folder=${folder}`);
     }
 
     return persistedUrls;
@@ -316,7 +316,7 @@ export class AdminProductController {
     // Process main product images
     if (processedData.images?.length) {
       try {
-        processedData.images = await this.cloneImagesToS3(
+        processedData.images = await this.cloneImagesToStorage(
           processedData.images,
           'products',
         );
@@ -332,7 +332,7 @@ export class AdminProductController {
         const variant = processedData.variants[i];
         if (variant.images?.length) {
           try {
-            variant.images = await this.cloneImagesToS3(
+            variant.images = await this.cloneImagesToStorage(
               variant.images,
               'products/variants',
               { maxPreparedCount: 1 },
@@ -845,17 +845,17 @@ export class AdminProductController {
       // 4. Normalize extracted values
       const normalizedExtractedData = this.normalizeProductPayload(extractedData, "create");
 
-      // 5. Upload extracted images to S3 in parallel
+      // 5. Upload extracted images to storage in parallel
       const uploadImagesStartedAt = Date.now();
       const mainPreparedImages = Array.isArray(normalizedExtractedData.images)
         ? this.keepBestPreparedImages(
-            await this.s3Service.prepareImageSources(normalizedExtractedData.images),
+            await this.storageService.prepareImageSources(normalizedExtractedData.images),
           )
         : [];
       const fallbackMainImage = mainPreparedImages[0];
 
       if (mainPreparedImages.length > 0) {
-        normalizedExtractedData.images = await this.s3Service.persistPreparedImageSources(
+        normalizedExtractedData.images = await this.storageService.persistPreparedImageSources(
           mainPreparedImages,
           "products",
         );
@@ -868,7 +868,7 @@ export class AdminProductController {
           normalizedExtractedData.variants.map(async (variant: any) => {
             const variantPreparedImages = Array.isArray(variant.images)
               ? this.keepBestPreparedImages(
-                  await this.s3Service.prepareImageSources(variant.images),
+                  await this.storageService.prepareImageSources(variant.images),
                   1,
                 )
               : [];
@@ -886,7 +886,7 @@ export class AdminProductController {
               return;
             }
 
-            variant.images = await this.s3Service.persistPreparedImageSources(
+            variant.images = await this.storageService.persistPreparedImageSources(
               selectedPreparedImages,
               "products/variants",
             );

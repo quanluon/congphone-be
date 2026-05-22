@@ -1,17 +1,17 @@
-import { S3Service } from "../../services/s3.service";
+import { StorageService } from "../../services/storage.service";
 import { NextFunction, Request, Response } from "express";
 import { CategoryService } from "../../services/category.service";
 import { ApiError, ApiResponse } from "../../utils/ApiResponse";
 
 export class AdminCategoryController {
   private categoryService = new CategoryService();
-  private s3Service = new S3Service();
+  private storageService = new StorageService();
 
   async createCategory(req: Request, res: Response, next: NextFunction) {
     try {
       const categoryData = req.body;
       if (categoryData.image) {
-        const movedImage = await this.s3Service.moveToPermanent(
+        const movedImage = await this.storageService.moveToPermanent(
           categoryData.image,
           "categories"
         );
@@ -63,7 +63,7 @@ export class AdminCategoryController {
       const updateData = req.body;
 
       if (updateData.image) {
-        const movedImage = await this.s3Service.moveToPermanent(
+        const movedImage = await this.storageService.moveToPermanent(
           updateData.image,
           "categories"
         );

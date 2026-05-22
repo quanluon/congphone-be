@@ -24,9 +24,10 @@ export interface PreparedImageSource {
   buffer: Buffer;
 }
 
-export class S3Service {
-  private s3Client: S3Client;
+export class StorageService {
+  private storageClient: S3Client;
   private bucket: string;
+  private publicEndpoint: string;
   private defaultFolder = "uploads";
   private normalizedCanvasSize = 1200;
   private lowQualityImagePattern =
@@ -35,14 +36,20 @@ export class S3Service {
     /(original|master|zoom|large|hi[\-_]?res|high[\-_]?res|retina|full[\-_]?size|gallery)/i;
 
   constructor() {
-    this.s3Client = new S3Client({
-      region: EnvVariables.AWS_REGION || "ap-southeast-1",
+    this.storageClient = new S3Client({
+      region: "auto",
+      endpoint: `https://${EnvVariables.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`,
       credentials: {
-        accessKeyId: EnvVariables.AWS_ACCESS_KEY_ID!,
-        secretAccessKey: EnvVariables.AWS_SECRET_ACCESS_KEY!,
+        accessKeyId: EnvVariables.R2_ACCESS_KEY_ID!,
+        secretAccessKey: EnvVariables.R2_SECRET_ACCESS_KEY!,
       },
     });
-    this.bucket = EnvVariables.S3_BUCKET!;
+    this.bucket = EnvVariables.R2_BUCKET!;
+    this.publicEndpoint = this.normalizeEndpoint(EnvVariables.R2_PUBLIC_ENDPOINT!);
+  }
+
+  private normalizeEndpoint(endpoint: string): string {
+    return endpoint.replace(/\/+$/, "");
   }
 
   private generateUniqueFileName(originalName: string): string {
@@ -230,10 +237,9 @@ export class S3Service {
       Key: key,
       Body: normalizedBuffer,
       ContentType: contentType,
-      ACL: "public-read",
     });
 
-    await this.s3Client.send(command);
+    await this.storageClient.send(command);
     return this.getPublicUrl(key);
   }
 
@@ -254,10 +260,9 @@ export class S3Service {
       Bucket: this.bucket,
       Key: key,
       ContentType: fileType,
-      ACL: "public-read",
     });
 
-    const url = await getSignedUrl(this.s3Client, command, { expiresIn: 3600 });
+    const url = await getSignedUrl(this.storageClient, command, { expiresIn: 3600 });
 
     return {
       url,
@@ -272,36 +277,68 @@ export class S3Service {
       Key: this.getSourceKey(key),
     });
 
-    await this.s3Client.send(command);
+    await this.storageClient.send(command);
   }
 
   getBaseUrl(): string {
-    return `https://${this.bucket}.s3.${EnvVariables.AWS_REGION}.amazonaws.com/`;
+    return `${this.publicEndpoint}/`;
   }
 
   isManagedUrl(url: string): boolean {
     if (!url) return false;
 
-    const cloudfrontBase = EnvVariables.CLOUDFRONT_STORAGE_ENDPOINT;
+    const legacyStorageEndpoints = [
+      EnvVariables.LEGACY_S3_PUBLIC_ENDPOINT,
+      EnvVariables.LEGACY_CLOUDFRONT_STORAGE_ENDPOINT,
+      EnvVariables.S3_BUCKET && EnvVariables.AWS_REGION
+        ? `https://${EnvVariables.S3_BUCKET}.s3.${EnvVariables.AWS_REGION}.amazonaws.com`
+        : undefined,
+    ]
+      .filter((endpoint): endpoint is string => Boolean(endpoint))
+      .map((endpoint) => this.normalizeEndpoint(endpoint));
 
     return (
       url.startsWith(this.getBaseUrl()) ||
-      url.startsWith(cloudfrontBase!) ||
+      legacyStorageEndpoints.some((endpoint) => url.startsWith(`${endpoint}/`)) ||
       url.includes(`/${this.defaultFolder}/`)
     );
   }
 
-  // getPublicUrl(key: string): string {
-  //   return `https://${this.bucket}.s3.${EnvVariables.AWS_REGION}.amazonaws.com/${key}`;
-  // }
-
   getPublicUrl(key: string): string {
-    return `${EnvVariables.CLOUDFRONT_STORAGE_ENDPOINT}/${key}`;
+    return `${this.publicEndpoint}/${this.getSourceKey(key)}`;
   }
 
   getSourceKey(sourceUrl: string): string {
     if (!sourceUrl) return "";
-    return sourceUrl.replace(this.getBaseUrl(), "");
+
+    const normalizedPublicEndpoint = `${this.publicEndpoint}/`;
+    if (sourceUrl.startsWith(normalizedPublicEndpoint)) {
+      return sourceUrl.replace(normalizedPublicEndpoint, "");
+    }
+
+    const legacyStorageEndpoints = [
+      EnvVariables.LEGACY_S3_PUBLIC_ENDPOINT,
+      EnvVariables.LEGACY_CLOUDFRONT_STORAGE_ENDPOINT,
+      EnvVariables.S3_BUCKET && EnvVariables.AWS_REGION
+        ? `https://${EnvVariables.S3_BUCKET}.s3.${EnvVariables.AWS_REGION}.amazonaws.com`
+        : undefined,
+    ]
+      .filter((endpoint): endpoint is string => Boolean(endpoint))
+      .map((endpoint) => `${this.normalizeEndpoint(endpoint)}/`);
+
+    const matchedEndpoint = legacyStorageEndpoints.find((endpoint) =>
+      sourceUrl.startsWith(endpoint),
+    );
+    if (matchedEndpoint) {
+      return sourceUrl.replace(matchedEndpoint, "");
+    }
+
+    try {
+      const url = new URL(sourceUrl);
+      return url.pathname.replace(/^\/+/, "");
+    } catch {
+      return sourceUrl.replace(/^\/+/, "");
+    }
   }
 
   // Move file from upload folder to permanent folder
@@ -319,10 +356,9 @@ export class S3Service {
       Bucket: this.bucket,
       Key: destinationKey,
       CopySource: `${this.bucket}/${sourceKey}`,
-      ACL: "public-read",
     });
 
-    await this.s3Client.send(command);
+    await this.storageClient.send(command);
 
     // Delete the original file from upload folder
     await this.deleteFile(sourceKey);
@@ -363,12 +399,12 @@ export class S3Service {
           isLowQuality: prepared.isLowQuality,
           normalizedCanvasSize: this.normalizedCanvasSize,
         },
-        "Prepared remote image for S3 upload",
+        "Prepared remote image for storage upload",
       );
 
       return this.persistPreparedImageSource(prepared, folder);
     } catch (error: any) {
-      logger.error({ err: error, url }, 'Failed to upload image from URL to S3');
+      logger.error({ err: error, url }, 'Failed to upload image from URL to storage');
       throw error;
     }
   }

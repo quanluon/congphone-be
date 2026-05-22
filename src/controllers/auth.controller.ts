@@ -3,10 +3,10 @@ import { ApiResponse, ApiError } from "../utils/ApiResponse";
 import { authService } from "../services/auth.service";
 import { getCurrentUser } from "../middleware/auth";
 import { UserType } from "../models/user.model";
-import { S3Service } from "../services/s3.service";
+import { StorageService } from "../services/storage.service";
 
 export class AuthController {
-  s3Service = new S3Service();
+  storageService = new StorageService();
   /**
    * Register a new user (public)
    */
@@ -223,7 +223,7 @@ export class AuthController {
     try {
       const user = getCurrentUser(req);
       if (req.body?.profileImage) {
-        const storedProfileImage = await this.s3Service.moveToPermanent(
+        const storedProfileImage = await this.storageService.moveToPermanent(
           req.body.profileImage,
           "users"
         );

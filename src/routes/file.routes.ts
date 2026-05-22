@@ -4,13 +4,13 @@ import { FileUploadController } from "../controllers/fileUpload.controller";
 const router = express.Router();
 const fileUploadController = new FileUploadController();
 
-// Get presigned URL for direct S3 upload
+// Get presigned URL for direct object storage upload
 router.post("/upload-url", fileUploadController.getPresignedUrl.bind(fileUploadController));
 
 // Get presigned URLs for multiple files
 router.post("/upload-urls", fileUploadController.getMultiplePresignedUrls.bind(fileUploadController));
 
-// Delete file from S3
+// Delete file from object storage
 router.delete("/delete", fileUploadController.deleteFile.bind(fileUploadController));
 
 // Get file info (public URL)

@@ -1,30 +1,26 @@
 # Environment Variables Template
 
-Create a `.env` file in the `be/` directory with the following variables:
+Create a `.env` file in the `be/` directory with these values.
 
 ## Required Variables
 
 ```bash
-# AWS Configuration (if not using `aws configure`)
-AWS_ACCESS_KEY_ID=your_aws_access_key_id_here
-AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key_here
-AWS_REGION=ap-southeast-1
-AWS_ACCOUNT_ID=018134828672
-
-# ECR Configuration
-ECR_REPOSITORY=mobile/be
-
 # MongoDB Database
 MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
 MONGODB_NAME=cong-phone
 
-# AWS S3 Storage
-S3_BUCKET=your-s3-bucket-name
-CLOUDFRONT_STORAGE_ENDPOINT=https://cdn.example.com
-
-# AWS Cognito Authentication
+# Firebase / Cognito Authentication
+FIREBASE_PROJECT_ID=your_firebase_project_id
+AWS_REGION=ap-southeast-1
 COGNITO_USER_POOL_ID=ap-southeast-1_xxxxxxxxx
 COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
+
+# Cloudflare R2 Storage
+R2_ACCOUNT_ID=your_cloudflare_account_id
+R2_ACCESS_KEY_ID=your_r2_access_key_id
+R2_SECRET_ACCESS_KEY=your_r2_secret_access_key
+R2_BUCKET=your-r2-bucket-name
+R2_PUBLIC_ENDPOINT=https://cdn.example.com
 
 # Application Environment
 NODE_ENV=production
@@ -35,101 +31,54 @@ ALLOWED_ORIGINS=https://shop.example.com,https://admin.example.com
 ## Optional Variables
 
 ```bash
-# Telegram Notifications (if using)
+# Legacy storage endpoints used only while migrating existing URLs.
+LEGACY_CLOUDFRONT_STORAGE_ENDPOINT=https://old-cdn.example.com
+LEGACY_S3_PUBLIC_ENDPOINT=https://old-bucket.s3.ap-southeast-1.amazonaws.com
+S3_BUCKET=old-s3-bucket-name
+
+# Telegram Notifications
 TELEGRAM_BOT_TOKEN=your_telegram_bot_token
 TELEGRAM_CHAT_ID=your_telegram_chat_id
 TELEGRAM_MENTION_USER_IDS=123456789,987654321
+
+# AI / product vector features
+OPENAI_API_KEY=your_openai_api_key
+PRODUCT_VECTOR_MODEL=Xenova/all-MiniLM-L6-v2
+PRODUCT_VECTOR_CACHE_DIR=.cache/product-vectors
+PRODUCT_VECTOR_QUANTIZED=true
 ```
 
-## How to Create `.env` File
+## Cloudflare R2 Setup
 
-### Option 1: Manual Creation
+1. Create an R2 bucket in Cloudflare.
+2. Create an R2 API token with object read/write permissions for that bucket.
+3. Configure a public bucket domain or custom domain.
+4. Use that public domain as `R2_PUBLIC_ENDPOINT`.
 
-1. Create a new file named `.env` in the `be/` directory
-2. Copy the template above
-3. Replace all placeholder values with your actual credentials
+The backend is hosted on Vercel. Cloudflare is only used for file/object storage and public file serving.
 
-### Option 2: Using Command Line
+## Vercel Setup
+
+Set the same required variables in the Vercel project environment. The backend build command is:
 
 ```bash
-cd be
-
-# Create .env file
-cat > .env << 'EOF'
-AWS_ACCESS_KEY_ID=your_aws_access_key_id_here
-AWS_SECRET_ACCESS_KEY=your_aws_secret_access_key_here
-AWS_REGION=ap-southeast-1
-AWS_ACCOUNT_ID=018134828672
-
-ECR_REPOSITORY=mobile/be
-
-MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database
-MONGODB_NAME=cong-phone
-S3_BUCKET=your-s3-bucket-name
-CLOUDFRONT_STORAGE_ENDPOINT=https://cdn.example.com
-COGNITO_USER_POOL_ID=ap-southeast-1_xxxxxxxxx
-COGNITO_CLIENT_ID=xxxxxxxxxxxxxxxxxxxxxxxxxx
-
-NODE_ENV=production
-DASHBOARD_URL=https://admin.example.com
-ALLOWED_ORIGINS=https://shop.example.com,https://admin.example.com
-EOF
-
-# Edit with your preferred editor
-nano .env
-# or
-vim .env
-# or
-code .env
+yarn build:vercel
 ```
 
-## AWS Credentials
+The Vercel entrypoint is `index.js`, which loads `dist/vercel.js`.
 
-You can obtain AWS credentials in two ways:
+## Storage Migration
 
-### Method 1: AWS CLI (Recommended)
-```bash
-aws configure
-```
-This stores credentials in `~/.aws/credentials` and they will be automatically used.
-
-### Method 2: .env File
-Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to your `.env` file.
-
-## Getting Your Values
-
-### MongoDB URI
-- Sign up at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
-- Create a cluster
-- Get connection string from "Connect" → "Connect your application"
-
-### S3 Bucket
-- Go to [AWS S3 Console](https://console.aws.amazon.com/s3/)
-- Create a new bucket or use existing one
-- Copy the bucket name
-
-### Cognito User Pool
-- Go to [AWS Cognito Console](https://console.aws.amazon.com/cognito/)
-- Create a user pool or use existing one
-- Copy the User Pool ID and App Client ID
-
-## Security Notes
-
-⚠️ **IMPORTANT:**
-- Never commit `.env` file to version control
-- Keep your credentials secure
-- Use different credentials for development and production
-- Rotate credentials regularly
-- Use AWS IAM roles when possible instead of access keys
-
-## Verification
-
-After creating your `.env` file, verify it:
+Run a dry run first:
 
 ```bash
-# Check if file exists
-ls -la .env
-
-# Check if variables are loadable (don't display values)
-node -e "require('dotenv').config(); console.log('✅ .env loaded successfully');"
+yarn migrate:storage:r2 -- --mode=dry-run
 ```
+
+After backing up MongoDB and confirming the R2 public endpoint works, execute:
+
+```bash
+yarn migrate:storage:r2 -- --mode=execute
+```
+
+The migration copies legacy product, variant, category, and user profile images to R2, then rewrites MongoDB URLs to `R2_PUBLIC_ENDPOINT`.

@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction } from "express";
-import { S3Service } from "../services/s3.service";
+import { StorageService } from "../services/storage.service";
 import { ApiResponse, ApiError } from "../utils/ApiResponse";
 import { MAX_FILE_SIZE, MAX_FILES_PER_REQUEST } from "../constants/common";
 
 export class FileUploadController {
-  private s3Service: S3Service;
+  private storageService: StorageService;
 
   constructor() {
-    this.s3Service = new S3Service();
+    this.storageService = new StorageService();
   }
 
-  // Get presigned URL for direct upload to S3
+  // Get presigned URL for direct upload to object storage
   async getPresignedUrl(req: Request, res: Response, next: NextFunction) {
     try {
       const { fileName, fileType } = req.body;
@@ -28,12 +28,12 @@ export class FileUploadController {
         throw new ApiError(400, "Invalid file type. Only images and documents are allowed.", null, 'fileTypeInvalid');
       }
 
-      // Validate file size (this is a basic check, actual validation happens on S3)
+      // Validate file size here before direct upload storage validation.
       if (req.body.fileSize && req.body.fileSize > MAX_FILE_SIZE) {
         throw new ApiError(400, "File size exceeds 10MB limit", null, 'fileSizeExceeded');
       }
 
-      const uploadUrl = await this.s3Service.getPresignedUrl(fileName, fileType);
+      const uploadUrl = await this.storageService.getPresignedUrl(fileName, fileType);
 
       res.json(ApiResponse.success(uploadUrl).build());
     } catch (error) {
@@ -77,7 +77,7 @@ export class FileUploadController {
           throw new ApiError(400, `File size for ${fileName} exceeds 10MB limit`, null, 'fileSizeExceeded');
         }
 
-        const uploadUrl = await this.s3Service.getPresignedUrl(fileName, fileType);
+        const uploadUrl = await this.storageService.getPresignedUrl(fileName, fileType);
         uploadUrls.push({
           fileName,
           fileType,
@@ -92,7 +92,7 @@ export class FileUploadController {
     }
   }
 
-  // Delete file from S3
+  // Delete file from object storage
   async deleteFile(req: Request, res: Response, next: NextFunction) {
     try {
       const { fileKey } = req.body;
@@ -101,7 +101,7 @@ export class FileUploadController {
         throw new ApiError(400, "File key is required", null, 'fileKeyRequired');
       }
 
-      await this.s3Service.deleteFile(fileKey);
+      await this.storageService.deleteFile(fileKey);
 
       res.json(
         ApiResponse.success({ message: "File deleted successfully" }).build()
@@ -120,7 +120,7 @@ export class FileUploadController {
         throw new ApiError(400, "File key is required", null, 'fileKeyRequired');
       }
 
-      const publicUrl = this.s3Service.getPublicUrl(fileKey);
+      const publicUrl = this.storageService.getPublicUrl(fileKey);
 
       res.json(
         ApiResponse.success({
@@ -142,7 +142,7 @@ export class FileUploadController {
         throw new ApiError(400, "File key is required", null, 'fileKeyRequired');
       }
 
-      const result = await this.s3Service.moveToPermanent(fileKey, folder);
+      const result = await this.storageService.moveToPermanent(fileKey, folder);
 
       res.json(
         ApiResponse.success(result).build()
@@ -165,7 +165,7 @@ export class FileUploadController {
         throw new ApiError(400, "Maximum 10 files allowed per request", null, 'maxFilesExceeded');
       }
 
-      const results = await this.s3Service.moveMultipleToPermanent(fileKeys, folder);
+      const results = await this.storageService.moveMultipleToPermanent(fileKeys, folder);
 
       res.json(
         ApiResponse.success({ results }).build()

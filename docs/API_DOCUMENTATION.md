@@ -1047,7 +1047,7 @@ Get product by URL-friendly slug.
 
 **POST** `/files/upload-url`
 
-Get presigned URL for single file upload to S3.
+Get presigned URL for single file upload to Cloudflare R2 object storage.
 
 **Request Body:**
 ```json
@@ -1064,7 +1064,7 @@ Get presigned URL for single file upload to S3.
   "success": true,
   "message": "Upload URL generated successfully",
   "data": {
-    "uploadUrl": "https://s3.amazonaws.com/bucket/path/to/file?presigned-params",
+    "uploadUrl": "https://account-id.r2.cloudflarestorage.com/bucket/path/to/file?presigned-params",
     "fileKey": "uploads/products/2024/01/01/product-image.jpg",
     "expiresIn": 3600
   }
@@ -1075,7 +1075,7 @@ Get presigned URL for single file upload to S3.
 
 **POST** `/files/upload-urls`
 
-Get multiple presigned URLs for batch file upload to S3.
+Get multiple presigned URLs for batch file upload to Cloudflare R2 object storage.
 
 **Request Body:**
 ```json
@@ -1102,12 +1102,12 @@ Get multiple presigned URLs for batch file upload to S3.
   "message": "Upload URLs generated successfully",
   "data": [
     {
-      "uploadUrl": "https://s3.amazonaws.com/bucket/path/to/file1?presigned-params",
+      "uploadUrl": "https://account-id.r2.cloudflarestorage.com/bucket/path/to/file1?presigned-params",
       "fileKey": "uploads/products/2024/01/01/product-image-1.jpg",
       "expiresIn": 3600
     },
     {
-      "uploadUrl": "https://s3.amazonaws.com/bucket/path/to/file2?presigned-params",
+      "uploadUrl": "https://account-id.r2.cloudflarestorage.com/bucket/path/to/file2?presigned-params",
       "fileKey": "uploads/products/2024/01/01/product-image-2.jpg",
       "expiresIn": 3600
     }
@@ -1119,7 +1119,7 @@ Get multiple presigned URLs for batch file upload to S3.
 
 **DELETE** `/files/delete`
 
-Delete file from S3.
+Delete file from object storage.
 
 **Request Body:**
 ```json
@@ -1140,7 +1140,7 @@ Delete file from S3.
 
 **GET** `/files/info/:fileKey`
 
-Get file information from S3.
+Get file public URL information from object storage.
 
 **Response:**
 ```json
@@ -1152,7 +1152,7 @@ Get file information from S3.
     "size": 1024000,
     "lastModified": "2024-01-01T00:00:00.000Z",
     "contentType": "image/jpeg",
-    "url": "https://s3.amazonaws.com/bucket/uploads/products/2024/01/01/product-image.jpg"
+    "url": "https://cdn.example.com/uploads/products/2024/01/01/product-image.jpg"
   }
 }
 ```
@@ -1269,7 +1269,7 @@ curl -X POST http://localhost:3001/files/upload-url \
   -H "Content-Type: application/json" \
   -d '{"fileName":"product.jpg","fileType":"image/jpeg","fileSize":1024000}'
 
-# 2. Upload file to S3 using presigned URL
+# 2. Upload file to object storage using presigned URL
 curl -X PUT "PRESIGNED_URL" \
   -H "Content-Type: image/jpeg" \
   --data-binary @product.jpg

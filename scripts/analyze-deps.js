@@ -69,10 +69,10 @@ function analyzeDependencies() {
   console.log('\n📊 Bundle size optimization tips:');
   console.log('  1. Use esbuild for faster, smaller builds');
   console.log('  2. Enable tree shaking to remove unused code');
-  console.log('  3. Use external dependencies for AWS SDK');
+  console.log('  3. Keep Cloudflare R2/AWS SDK usage scoped to storage and auth modules');
   console.log('  4. Minify production builds');
   console.log('  5. Remove console.log statements in production');
-  console.log('  6. Use serverless packaging patterns to exclude dev files');
+  console.log('  6. Keep Vercel output focused on dist/vercel.js');
   
   console.log('\n🚀 Next steps:');
   console.log('  1. Run: yarn build:analyze');
