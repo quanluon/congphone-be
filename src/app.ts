@@ -2,7 +2,6 @@ import cors from "cors";
 import express from "express";
 
 import "./config/database";
-import { EnvVariables } from "./config/env";
 import { ensureDatabaseConnection } from "./bootstrap";
 import { optionalAuth } from "./middleware/auth";
 import { errorHandler } from "./middleware/error";
@@ -14,14 +13,7 @@ export const createApp = () => {
 
   app.use(
     cors({
-      origin(origin, callback) {
-        if (!origin || EnvVariables.ALLOWED_ORIGINS.includes(origin)) {
-          callback(null, true);
-          return;
-        }
-
-        callback(new Error(`Origin ${origin} is not allowed by CORS`));
-      },
+      origin: true,
       methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
       allowedHeaders: ["Content-Type", "Authorization", "x-amz-acl", "x-api-key"],
       credentials: true,
@@ -44,7 +36,7 @@ export const createApp = () => {
   app.use(errorHandler);
 
   logger.debug(
-    { allowedOrigins: EnvVariables.ALLOWED_ORIGINS },
+    { allowAllOrigins: true },
     "Express app initialized"
   );
 
